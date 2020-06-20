@@ -1,0 +1,12 @@
+[package]
+name = "cargo-depgraph"
+version = "0.1.0"
+authors = ["Jonas Platte <jplatte@posteo.de>"]
+license = "GPL-3.0-or-later"
+edition = "2018"
+
+[dependencies]
+anyhow = "1.0.31"
+cargo-lock = { version = "4.0.1", features = ["dependency-tree"] }
+cargo_metadata = "0.10.0"
+petgraph = "0.5.1"

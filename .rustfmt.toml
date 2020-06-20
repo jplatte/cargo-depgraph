@@ -1,0 +1,2 @@
+merge_imports = true
+use_small_heuristics = "Max"
