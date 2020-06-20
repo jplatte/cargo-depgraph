@@ -1,0 +1,2 @@
+- Store more than just NodeDep for edges (is_optional for root / workspace pkgs)
+  - What about conditionally activated features in a dependency?
