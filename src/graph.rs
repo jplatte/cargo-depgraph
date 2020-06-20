@@ -4,7 +4,7 @@ use anyhow::Context;
 use cargo_metadata::{Metadata, NodeDep, Package as MetaPackage, PackageId, Resolve};
 use petgraph::graph::{DiGraph, NodeIndex};
 
-use crate::package::Package;
+use crate::package::{Package, PackageFlags};
 
 pub type DepGraph = DiGraph<Package, NodeDep, u16>;
 
@@ -56,7 +56,7 @@ impl DepGraphBuilder {
         for pkg_id in &self.workspace_members {
             let pkg =
                 pop_package(&mut self.packages, pkg_id).context("package not found in packages")?;
-            let node_idx = self.graph.add_node(Package::new(pkg, true));
+            let node_idx = self.graph.add_node(Package::new(pkg, PackageFlags::root()));
             self.deps_add_queue.push_back(pkg_id.clone());
             let old_val = self.node_indices.insert(pkg_id.clone(), node_idx);
             assert!(old_val.is_none());
@@ -82,10 +82,14 @@ impl DepGraphBuilder {
             for dep in &resolve_node.deps {
                 let mut packages = &mut self.packages;
                 let child_idx = match self.node_indices.entry(dep.pkg.clone()) {
-                    HashMapEntry::Occupied(o) => *o.get(),
+                    HashMapEntry::Occupied(o) => {
+                        let idx = *o.get();
+                        self.graph[idx].flags.combine(dep.into());
+                        idx
+                    }
                     HashMapEntry::Vacant(v) => {
                         let pkg = pop_package(&mut packages, &dep.pkg).unwrap();
-                        let idx = self.graph.add_node(Package::new(pkg, false));
+                        let idx = self.graph.add_node(Package::new(pkg, dep.into()));
                         self.deps_add_queue.push_back(dep.pkg.clone());
                         v.insert(idx);
                         idx

@@ -16,16 +16,27 @@ fn main() -> anyhow::Result<()> {
         Dot::with_attr_getters(
             &graph,
             &[Config::EdgeNoLabel],
-            &|_, _edge| { format!("") },
-            &|_, node| {
-                let pkg = node.1;
+            &|_, edge| {
+                let dep = edge.weight();
                 let mut attrs = Vec::new();
 
-                if pkg.is_ws_member {
-                    attrs.push("shape = box".to_owned());
+                if dep.dep_kinds.iter().all(|k| k.target.is_some()) {
+                    attrs.push("color = red".to_owned());
                 }
 
-                attrs.join(",")
+                attrs.join(", ")
+            },
+            &|_, (_, pkg)| {
+                let mut attrs = Vec::new();
+
+                if pkg.flags.is_ws_member {
+                    attrs.push("shape = box".to_owned());
+                }
+                if pkg.flags.is_target_dep {
+                    attrs.push("color = red".to_owned());
+                }
+
+                attrs.join(", ")
             }
         )
     );
