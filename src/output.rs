@@ -51,7 +51,7 @@ fn attr_for_dep_kind(kind: DependencyKind) -> Option<&'static str> {
     match kind {
         DependencyKind::Normal => None,
         DependencyKind::Development => Some("color = blue"),
-        DependencyKind::Build => Some("color = darkgreen"),
+        DependencyKind::Build => Some("color = green3"),
         DependencyKind::Unknown => Some("color = red"),
     }
 }
