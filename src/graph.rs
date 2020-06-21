@@ -1,12 +1,15 @@
 use std::collections::{hash_map::Entry as HashMapEntry, HashMap, VecDeque};
 
 use anyhow::Context;
-use cargo_metadata::{Metadata, NodeDep, Package as MetaPackage, PackageId, Resolve};
-use petgraph::graph::{DiGraph, NodeIndex};
+use cargo_metadata::{Metadata, Package as MetaPackage, PackageId, Resolve};
+use petgraph::{
+    graph::{DiGraph, NodeIndex},
+    Direction,
+};
 
-use crate::package::{Package, PackageFlags};
+use crate::{dep_info::DepInfo, package::Package};
 
-pub type DepGraph = DiGraph<Package, NodeDep, u16>;
+pub type DepGraph = DiGraph<Package, DepInfo, u16>;
 
 pub fn get_dep_graph(metadata: Metadata) -> anyhow::Result<DepGraph> {
     let mut builder = DepGraphBuilder::new(metadata)?;
@@ -14,6 +17,36 @@ pub fn get_dep_graph(metadata: Metadata) -> anyhow::Result<DepGraph> {
     builder.add_dependencies()?;
 
     Ok(builder.graph)
+}
+
+pub fn update_dep_info(graph: &mut DepGraph) {
+    // Assuming that the node indices returned are in the order we inserted the nodes, this should
+    // work (barring complex cases that include dependency cycles).
+    for idx in graph.node_indices() {
+        let mut incoming = graph.neighbors_directed(idx, Direction::Incoming).detach();
+        let mut node_info: Option<DepInfo> = None;
+        while let Some(edge_idx) = incoming.next_edge(graph) {
+            let edge_info = graph.edge_weight(edge_idx).unwrap();
+            if let Some(i) = &mut node_info {
+                i.is_target_dep &= edge_info.is_target_dep;
+            } else {
+                node_info = Some(*edge_info);
+            }
+        }
+
+        graph.node_weight_mut(idx).unwrap().dep_info = node_info;
+
+        let node_info = match node_info {
+            Some(i) => i,
+            None => continue,
+        };
+
+        let mut outgoing = graph.neighbors_directed(idx, Direction::Outgoing).detach();
+        while let Some(edge_idx) = outgoing.next_edge(graph) {
+            let edge_info = graph.edge_weight_mut(edge_idx).unwrap();
+            edge_info.is_target_dep |= node_info.is_target_dep;
+        }
+    }
 }
 
 struct DepGraphBuilder {
@@ -56,7 +89,7 @@ impl DepGraphBuilder {
         for pkg_id in &self.workspace_members {
             let pkg =
                 pop_package(&mut self.packages, pkg_id).context("package not found in packages")?;
-            let node_idx = self.graph.add_node(Package::new(pkg, PackageFlags::root()));
+            let node_idx = self.graph.add_node(Package::new(pkg, true));
             self.deps_add_queue.push_back(pkg_id.clone());
             let old_val = self.node_indices.insert(pkg_id.clone(), node_idx);
             assert!(old_val.is_none());
@@ -82,21 +115,23 @@ impl DepGraphBuilder {
             for dep in &resolve_node.deps {
                 let mut packages = &mut self.packages;
                 let child_idx = match self.node_indices.entry(dep.pkg.clone()) {
-                    HashMapEntry::Occupied(o) => {
-                        let idx = *o.get();
-                        self.graph[idx].flags.combine(dep.into());
-                        idx
-                    }
+                    HashMapEntry::Occupied(o) => *o.get(),
                     HashMapEntry::Vacant(v) => {
                         let pkg = pop_package(&mut packages, &dep.pkg).unwrap();
-                        let idx = self.graph.add_node(Package::new(pkg, dep.into()));
+                        let idx = self.graph.add_node(Package::new(pkg, false));
                         self.deps_add_queue.push_back(dep.pkg.clone());
                         v.insert(idx);
                         idx
                     }
                 };
 
-                self.graph.add_edge(parent_idx, child_idx, dep.clone());
+                for info in &dep.dep_kinds {
+                    self.graph.add_edge(
+                        parent_idx,
+                        child_idx,
+                        DepInfo { kind: info.kind, is_target_dep: info.target.is_some() },
+                    );
+                }
             }
         }
 
