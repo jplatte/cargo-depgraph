@@ -27,7 +27,8 @@ fn main() -> anyhow::Result<()> {
                 let mut attrs = Vec::new();
 
                 if dep.is_target_dep {
-                    attrs.push("color = red".to_owned());
+                    attrs.push("arrowType = empty".to_owned());
+                    attrs.push("fillcolor = lightgrey".to_owned());
                 }
 
                 attrs.join(", ")
@@ -38,7 +39,8 @@ fn main() -> anyhow::Result<()> {
                 match pkg.dep_info {
                     Some(info) => {
                         if info.is_target_dep {
-                            attrs.push("color = red".to_owned());
+                            attrs.push("style = filled".to_owned());
+                            attrs.push("fillcolor = lightgrey".to_owned());
                         }
                     }
                     None => {
