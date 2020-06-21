@@ -20,7 +20,7 @@ use self::{
 };
 
 fn main() -> anyhow::Result<()> {
-    let config = parse_options()?;
+    let config = parse_options();
     let metadata = MetadataCommand::new().exec()?;
 
     let mut graph = get_dep_graph(metadata, &config)?;
