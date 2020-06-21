@@ -1,4 +1,4 @@
-use cargo_metadata::MetadataCommand;
+use cargo_metadata::{DependencyKind, MetadataCommand};
 use petgraph::dot::{Config, Dot};
 
 // `DepInfo` represents the data associated with dependency graph edges
@@ -26,9 +26,13 @@ fn main() -> anyhow::Result<()> {
                 let dep = edge.weight();
                 let mut attrs = Vec::new();
 
+                if let Some(attr) = attr_for_dep_kind(dep.kind) {
+                    attrs.push(attr);
+                }
+
                 if dep.is_target_dep {
-                    attrs.push("arrowType = empty".to_owned());
-                    attrs.push("fillcolor = lightgrey".to_owned());
+                    attrs.push("arrowType = empty");
+                    attrs.push("fillcolor = lightgrey");
                 }
 
                 attrs.join(", ")
@@ -38,14 +42,18 @@ fn main() -> anyhow::Result<()> {
 
                 match pkg.dep_info {
                     Some(info) => {
+                        if let Some(attr) = attr_for_dep_kind(info.kind) {
+                            attrs.push(attr);
+                        }
+
                         if info.is_target_dep {
-                            attrs.push("style = filled".to_owned());
-                            attrs.push("fillcolor = lightgrey".to_owned());
+                            attrs.push("style = filled");
+                            attrs.push("fillcolor = lightgrey");
                         }
                     }
                     None => {
                         // Workspace member
-                        attrs.push("shape = box".to_owned());
+                        attrs.push("shape = box");
                     }
                 }
 
@@ -55,4 +63,13 @@ fn main() -> anyhow::Result<()> {
     );
 
     Ok(())
+}
+
+fn attr_for_dep_kind(kind: DependencyKind) -> Option<&'static str> {
+    match kind {
+        DependencyKind::Normal => None,
+        DependencyKind::Development => Some("color = blue"),
+        DependencyKind::Build => Some("color = darkgreen"),
+        DependencyKind::Unknown => Some("color = red"),
+    }
 }
