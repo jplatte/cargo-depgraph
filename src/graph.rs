@@ -7,14 +7,14 @@ use petgraph::{
     Direction,
 };
 
-use crate::{dep_info::DepInfo, package::Package};
+use crate::{cli::Config, dep_info::DepInfo, package::Package};
 
 pub type DepGraph = DiGraph<Package, DepInfo, u16>;
 
-pub fn get_dep_graph(metadata: Metadata) -> anyhow::Result<DepGraph> {
+pub fn get_dep_graph(metadata: Metadata, config: &Config) -> anyhow::Result<DepGraph> {
     let mut builder = DepGraphBuilder::new(metadata)?;
     builder.add_workspace_members()?;
-    builder.add_dependencies()?;
+    builder.add_dependencies(config)?;
 
     Ok(builder.graph)
 }
@@ -121,7 +121,7 @@ impl DepGraphBuilder {
         Ok(())
     }
 
-    fn add_dependencies(&mut self) -> anyhow::Result<()> {
+    fn add_dependencies(&mut self, config: &Config) -> anyhow::Result<()> {
         while let Some(pkg_id) = self.deps_add_queue.pop_front() {
             let parent_idx = *self
                 .node_indices
@@ -136,6 +136,10 @@ impl DepGraphBuilder {
                 .context("package not found in resolve")?;
 
             for dep in &resolve_node.deps {
+                if dep.dep_kinds.iter().all(|i| skip_dep(config, i)) {
+                    continue;
+                }
+
                 let mut packages = &mut self.packages;
                 let child_idx = match self.node_indices.entry(dep.pkg.clone()) {
                     HashMapEntry::Occupied(o) => *o.get(),
@@ -149,11 +153,17 @@ impl DepGraphBuilder {
                 };
 
                 for info in &dep.dep_kinds {
-                    self.graph.add_edge(
-                        parent_idx,
-                        child_idx,
-                        DepInfo { kind: info.kind, is_target_dep: info.target.is_some() },
-                    );
+                    // We checked whether to skip this dependency fully above, but if there's
+                    // multiple dependencies from A to B (e.g. normal dependency with no features,
+                    // dev-dependency with some features activated), we might have to skip adding
+                    // some of the edges.
+                    if !skip_dep(config, info) {
+                        self.graph.add_edge(
+                            parent_idx,
+                            child_idx,
+                            DepInfo { kind: info.kind, is_target_dep: info.target.is_some() },
+                        );
+                    }
                 }
             }
         }
@@ -167,4 +177,11 @@ fn pop_package(packages: &mut [Option<MetaPackage>], pkg_id: &PackageId) -> Opti
         Some(p) if p.id == *pkg_id => op.take(),
         _ => None,
     })
+}
+
+pub fn skip_dep(config: &Config, info: &cargo_metadata::DepKindInfo) -> bool {
+    (!config.normal_deps && info.kind == DependencyKind::Normal)
+        || (!config.build_deps && info.kind == DependencyKind::Build)
+        || (!config.dev_deps && info.kind == DependencyKind::Development)
+        || (!config.target_deps && info.target.is_some())
 }
