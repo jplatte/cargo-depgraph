@@ -1,7 +1,6 @@
-use cargo_metadata::DependencyKind;
 use petgraph::dot::{Config, Dot};
 
-use crate::graph::DepGraph;
+use crate::{dep_info::DepKind, graph::DepGraph};
 
 pub fn dot(graph: &DepGraph) -> Dot<'_, &DepGraph> {
     Dot::with_attr_getters(
@@ -47,11 +46,12 @@ pub fn dot(graph: &DepGraph) -> Dot<'_, &DepGraph> {
     )
 }
 
-fn attr_for_dep_kind(kind: DependencyKind) -> Option<&'static str> {
+fn attr_for_dep_kind(kind: DepKind) -> Option<&'static str> {
     match kind {
-        DependencyKind::Normal => None,
-        DependencyKind::Development => Some("color = blue"),
-        DependencyKind::Build => Some("color = green3"),
-        DependencyKind::Unknown => Some("color = red"),
+        DepKind::Normal => None,
+        DepKind::Dev => Some("color = blue"),
+        DepKind::Build => Some("color = green3"),
+        DepKind::BuildAndDev => Some("color = turquoise3"),
+        DepKind::Unknown => Some("color = red"),
     }
 }

@@ -1,13 +1,19 @@
 use std::collections::{hash_map::Entry as HashMapEntry, HashMap, VecDeque};
 
 use anyhow::Context;
-use cargo_metadata::{DependencyKind, Metadata, Package as MetaPackage, PackageId, Resolve};
+use cargo_metadata::{
+    DependencyKind as MetaDepKind, Metadata, Package as MetaPackage, PackageId, Resolve,
+};
 use petgraph::{
     graph::{DiGraph, NodeIndex},
     Direction,
 };
 
-use crate::{cli::Config, dep_info::DepInfo, package::Package};
+use crate::{
+    cli::Config,
+    dep_info::{DepInfo, DepKind},
+    package::Package,
+};
 
 pub type DepGraph = DiGraph<Package, DepInfo, u16>;
 
@@ -36,6 +42,31 @@ pub fn update_dep_info(graph: &mut DepGraph) {
             let edge_info = graph.edge_weight(edge_idx).unwrap();
             if let Some(i) = &mut node_info {
                 i.is_target_dep &= edge_info.is_target_dep;
+
+                match (i.kind, edge_info.kind) {
+                    // if node is unknown, do nothing
+                    (DepKind::Unknown, _) => {}
+
+                    // if not set to unknown (yet), set to unknown / normal if an incoming edge is
+                    // one of those
+                    (_, DepKind::Unknown) | (_, DepKind::Normal) => {
+                        i.kind = edge_info.kind;
+                    }
+
+                    // otherwise, if node is normal and edge is build and/or dev, or both node and
+                    // edge are the same, do nothing
+                    (DepKind::Normal, _)
+                    | (DepKind::Build, DepKind::Build)
+                    | (DepKind::Dev, DepKind::Dev) => {}
+
+                    // if a combination of build and dev, set BuildAndDev
+                    (DepKind::Build, DepKind::Dev)
+                    | (DepKind::Dev, DepKind::Build)
+                    | (DepKind::BuildAndDev, _)
+                    | (_, DepKind::BuildAndDev) => {
+                        i.kind = DepKind::BuildAndDev;
+                    }
+                }
             } else {
                 node_info = Some(*edge_info);
             }
@@ -54,17 +85,14 @@ pub fn update_dep_info(graph: &mut DepGraph) {
             let edge_info = graph.edge_weight_mut(edge_idx).unwrap();
             edge_info.is_target_dep |= node_info.is_target_dep;
 
-            // dev-dependencies of non-regular dependencies (really of non-workspace members)
-            // should not be included in the dependency graph.
-            assert!(
-                node_info.kind != DependencyKind::Normal
-                    || edge_info.kind != DependencyKind::Development
-            );
-            match node_info.kind {
-                DependencyKind::Build | DependencyKind::Development => {
+            match (node_info.kind, edge_info.kind) {
+                (_, DepKind::Normal) => {
                     edge_info.kind = node_info.kind;
                 }
-                DependencyKind::Normal | DependencyKind::Unknown => {}
+                (DepKind::Build, DepKind::Dev) | (DepKind::Dev, DepKind::Build) => {
+                    edge_info.kind = DepKind::BuildAndDev;
+                }
+                _ => {}
             }
         }
     }
@@ -161,7 +189,10 @@ impl DepGraphBuilder {
                         self.graph.add_edge(
                             parent_idx,
                             child_idx,
-                            DepInfo { kind: info.kind, is_target_dep: info.target.is_some() },
+                            DepInfo {
+                                kind: info.kind.into(),
+                                is_target_dep: info.target.is_some(),
+                            },
                         );
                     }
                 }
@@ -180,8 +211,8 @@ fn pop_package(packages: &mut [Option<MetaPackage>], pkg_id: &PackageId) -> Opti
 }
 
 pub fn skip_dep(config: &Config, info: &cargo_metadata::DepKindInfo) -> bool {
-    (!config.normal_deps && info.kind == DependencyKind::Normal)
-        || (!config.build_deps && info.kind == DependencyKind::Build)
-        || (!config.dev_deps && info.kind == DependencyKind::Development)
+    (!config.normal_deps && info.kind == MetaDepKind::Normal)
+        || (!config.build_deps && info.kind == MetaDepKind::Build)
+        || (!config.dev_deps && info.kind == MetaDepKind::Development)
         || (!config.target_deps && info.target.is_some())
 }
