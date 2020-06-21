@@ -1,7 +1,7 @@
 use std::collections::{hash_map::Entry as HashMapEntry, HashMap, VecDeque};
 
 use anyhow::Context;
-use cargo_metadata::{Metadata, Package as MetaPackage, PackageId, Resolve};
+use cargo_metadata::{DependencyKind, Metadata, Package as MetaPackage, PackageId, Resolve};
 use petgraph::{
     graph::{DiGraph, NodeIndex},
     Direction,
@@ -23,6 +23,13 @@ pub fn update_dep_info(graph: &mut DepGraph) {
     // Assuming that the node indices returned are in the order we inserted the nodes, this should
     // work (barring complex cases that include dependency cycles).
     for idx in graph.node_indices() {
+        let package = graph.node_weight(idx).unwrap();
+
+        // Don't update workspace members
+        if package.dep_info.is_none() {
+            continue;
+        }
+
         let mut incoming = graph.neighbors_directed(idx, Direction::Incoming).detach();
         let mut node_info: Option<DepInfo> = None;
         while let Some(edge_idx) = incoming.next_edge(graph) {
@@ -34,7 +41,8 @@ pub fn update_dep_info(graph: &mut DepGraph) {
             }
         }
 
-        graph.node_weight_mut(idx).unwrap().dep_info = node_info;
+        let package = graph.node_weight_mut(idx).unwrap();
+        package.dep_info = node_info;
 
         let node_info = match node_info {
             Some(i) => i,
@@ -45,9 +53,24 @@ pub fn update_dep_info(graph: &mut DepGraph) {
         while let Some(edge_idx) = outgoing.next_edge(graph) {
             let edge_info = graph.edge_weight_mut(edge_idx).unwrap();
             edge_info.is_target_dep |= node_info.is_target_dep;
+
+            // dev-dependencies of non-regular dependencies (really of non-workspace members)
+            // should not be included in the dependency graph.
+            assert!(
+                node_info.kind != DependencyKind::Normal
+                    || edge_info.kind != DependencyKind::Development
+            );
+            match node_info.kind {
+                DependencyKind::Build | DependencyKind::Development => {
+                    edge_info.kind = node_info.kind;
+                }
+                DependencyKind::Normal | DependencyKind::Unknown => {}
+            }
         }
     }
 }
+
+// TODO: Clone DepKindInfo to be able to distinguish build-dep of test-dep from just test-dep
 
 struct DepGraphBuilder {
     /// The dependency graph being built.
