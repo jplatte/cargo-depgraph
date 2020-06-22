@@ -118,7 +118,10 @@ impl DepKind {
             // This function should never be called with dev dependencies, unless those got marked
             // as dev in an earlier update pass (hopefully we won't do multiple passes forever)
             (DepKind::Dev, DepKind::Dev) => DepKind::Dev,
-            (_, DepKind::Dev) => unreachable!(),
+            (n, DepKind::Dev) => {
+                eprintln!("node {:?} has dev edge", n);
+                DepKind::Unknown
+            }
 
             // These should just be impossible in general
             (DepKind::Normal | DepKind::Build, DepKind::BuildOfDev)
@@ -128,7 +131,10 @@ impl DepKind {
                 | DepKind::DevAndBuild
                 | DepKind::NormalAndBuildOfDev
                 | DepKind::DevAndBuildOfDev,
-            ) => unreachable!(),
+            ) => {
+                eprintln!("node {:?} has edge {:?}", node_kind, *self);
+                DepKind::Unknown
+            }
         };
     }
 }
