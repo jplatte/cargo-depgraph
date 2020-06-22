@@ -51,7 +51,11 @@ fn attr_for_dep_kind(kind: DepKind) -> Option<&'static str> {
         DepKind::Normal => None,
         DepKind::Dev => Some("color = blue"),
         DepKind::Build => Some("color = green3"),
-        DepKind::BuildAndDev => Some("color = turquoise3"),
+        DepKind::BuildOfDev => Some("color = turquoise3"),
+        DepKind::NormalAndBuild => Some("color = darkgreen"),
+        DepKind::DevAndBuild => Some("color = darkviolet"),
+        DepKind::NormalAndBuildOfDev => Some("color = turquoise4"),
+        DepKind::DevAndBuildOfDev => Some("color = steelblue"),
         DepKind::Unknown => Some("color = red"),
     }
 }

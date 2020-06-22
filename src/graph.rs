@@ -9,11 +9,7 @@ use petgraph::{
     Direction,
 };
 
-use crate::{
-    cli::Config,
-    dep_info::{DepInfo, DepKind},
-    package::Package,
-};
+use crate::{cli::Config, dep_info::DepInfo, package::Package};
 
 pub type DepGraph = DiGraph<Package, DepInfo, u16>;
 
@@ -42,31 +38,7 @@ pub fn update_dep_info(graph: &mut DepGraph) {
             let edge_info = graph.edge_weight(edge_idx).unwrap();
             if let Some(i) = &mut node_info {
                 i.is_target_dep &= edge_info.is_target_dep;
-
-                match (i.kind, edge_info.kind) {
-                    // if node is unknown, do nothing
-                    (DepKind::Unknown, _) => {}
-
-                    // if not set to unknown (yet), set to unknown / normal if an incoming edge is
-                    // one of those
-                    (_, DepKind::Unknown) | (_, DepKind::Normal) => {
-                        i.kind = edge_info.kind;
-                    }
-
-                    // otherwise, if node is normal and edge is build and/or dev, or both node and
-                    // edge are the same, do nothing
-                    (DepKind::Normal, _)
-                    | (DepKind::Build, DepKind::Build)
-                    | (DepKind::Dev, DepKind::Dev) => {}
-
-                    // if a combination of build and dev, set BuildAndDev
-                    (DepKind::Build, DepKind::Dev)
-                    | (DepKind::Dev, DepKind::Build)
-                    | (DepKind::BuildAndDev, _)
-                    | (_, DepKind::BuildAndDev) => {
-                        i.kind = DepKind::BuildAndDev;
-                    }
-                }
+                i.kind.combine_incoming(edge_info.kind);
             } else {
                 node_info = Some(*edge_info);
             }
@@ -84,16 +56,7 @@ pub fn update_dep_info(graph: &mut DepGraph) {
         while let Some(edge_idx) = outgoing.next_edge(graph) {
             let edge_info = graph.edge_weight_mut(edge_idx).unwrap();
             edge_info.is_target_dep |= node_info.is_target_dep;
-
-            match (node_info.kind, edge_info.kind) {
-                (_, DepKind::Normal) => {
-                    edge_info.kind = node_info.kind;
-                }
-                (DepKind::Build, DepKind::Dev) | (DepKind::Dev, DepKind::Build) => {
-                    edge_info.kind = DepKind::BuildAndDev;
-                }
-                _ => {}
-            }
+            edge_info.kind.update_outgoing(node_info.kind);
         }
     }
 }
