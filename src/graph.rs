@@ -22,42 +22,55 @@ pub fn get_dep_graph(metadata: Metadata, config: &Config) -> anyhow::Result<DepG
 }
 
 pub fn update_dep_info(graph: &mut DepGraph) {
-    // Assuming that the node indices returned are in the order we inserted the nodes, this should
-    // work (barring complex cases that include dependency cycles).
     for idx in graph.node_indices() {
-        let package = graph.node_weight(idx).unwrap();
+        update_node(graph, idx);
+    }
+}
 
-        // Don't update workspace members
-        if package.dep_info.is_none() {
-            continue;
-        }
+fn update_node(graph: &mut DepGraph, idx: NodeIndex<u16>) {
+    let package = graph.node_weight_mut(idx).unwrap();
 
-        let mut incoming = graph.neighbors_directed(idx, Direction::Incoming).detach();
-        let mut node_info: Option<DepInfo> = None;
-        while let Some(edge_idx) = incoming.next_edge(graph) {
-            let edge_info = graph.edge_weight(edge_idx).unwrap();
-            if let Some(i) = &mut node_info {
-                i.is_target_dep &= edge_info.is_target_dep;
-                i.kind.combine_incoming(edge_info.kind);
-            } else {
-                node_info = Some(*edge_info);
-            }
-        }
-
-        let package = graph.node_weight_mut(idx).unwrap();
-        package.dep_info = node_info;
-
-        let node_info = match node_info {
-            Some(i) => i,
-            None => continue,
-        };
-
+    // Special case for workspace members
+    if package.dep_info.is_none() {
         let mut outgoing = graph.neighbors_directed(idx, Direction::Outgoing).detach();
         while let Some(edge_idx) = outgoing.next_edge(graph) {
             let edge_info = graph.edge_weight_mut(edge_idx).unwrap();
-            edge_info.is_target_dep |= node_info.is_target_dep;
-            edge_info.kind.update_outgoing(node_info.kind);
+            edge_info.visited = true;
         }
+
+        return;
+    }
+
+    let mut incoming = graph.neighbors_directed(idx, Direction::Incoming).detach();
+    let mut node_info: Option<DepInfo> = None;
+    while let Some((edge_idx, node_idx)) = incoming.next(graph) {
+        let edge_info = graph.edge_weight(edge_idx).unwrap();
+        if !edge_info.visited {
+            update_node(graph, node_idx);
+        }
+
+        let edge_info = graph.edge_weight(edge_idx).unwrap();
+        assert!(edge_info.visited);
+
+        if let Some(i) = &mut node_info {
+            i.is_target_dep &= edge_info.is_target_dep;
+            i.kind.combine_incoming(edge_info.kind);
+        } else {
+            node_info = Some(*edge_info);
+        }
+    }
+
+    let node_info = node_info.expect("non-workspace members to have at least one incoming edge");
+
+    let package = graph.node_weight_mut(idx).unwrap();
+    package.dep_info = Some(node_info);
+
+    let mut outgoing = graph.neighbors_directed(idx, Direction::Outgoing).detach();
+    while let Some(edge_idx) = outgoing.next_edge(graph) {
+        let edge_info = graph.edge_weight_mut(edge_idx).unwrap();
+        edge_info.visited = true;
+        edge_info.is_target_dep |= node_info.is_target_dep;
+        edge_info.kind.update_outgoing(node_info.kind);
     }
 }
 
@@ -155,6 +168,7 @@ impl DepGraphBuilder {
                             DepInfo {
                                 kind: info.kind.into(),
                                 is_target_dep: info.target.is_some(),
+                                visited: false,
                             },
                         );
                     }

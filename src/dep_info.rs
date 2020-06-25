@@ -6,10 +6,15 @@ pub struct DepInfo {
     // TODO: instead collect targets, once we can actually evaluate whether they apply
     // (would be a really nice feature to show a linux- or windows-specific depgraph)
     pub is_target_dep: bool,
+
+    /// whether this edge has been updated by update_dep_info after being inserted into the graph
+    pub visited: bool,
 }
 
-// TODO: BuildOfDev, a build-dependency of a dev-dependency, which in contrast to DevAndBuild only
-// ever runs on the host, never on the target.
+// TODO: potentially collapse this into sth like
+// struct DepKind { host: BuildFlag, target: BuildFlag }
+// enum BuildFlag { Always, Test, Never }
+// (unknown could be represented by { host: Never, target: Never })
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum DepKind {
     /// normal dep

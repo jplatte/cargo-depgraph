@@ -26,12 +26,6 @@ fn main() -> anyhow::Result<()> {
     let metadata = MetadataCommand::new().exec()?;
 
     let mut graph = get_dep_graph(metadata, &config)?;
-
-    // Badly needed: A graph algorithm that we can update the dep info with properly, without
-    // needing multiple passes over all nodes. For now, we do three passes, which is likely not
-    // going to fail on any real-world dependency graphs.
-    update_dep_info(&mut graph);
-    update_dep_info(&mut graph);
     update_dep_info(&mut graph);
 
     println!("{:?}", dot(&graph));
