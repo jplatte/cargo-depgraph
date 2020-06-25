@@ -28,14 +28,11 @@ pub fn update_dep_info(graph: &mut DepGraph) {
 }
 
 fn update_node(graph: &mut DepGraph, idx: NodeIndex<u16>) {
-    let package = graph.node_weight_mut(idx).unwrap();
-
     // Special case for workspace members
-    if package.dep_info.is_none() {
+    if graph[idx].dep_info.is_none() {
         let mut outgoing = graph.neighbors_directed(idx, Direction::Outgoing).detach();
         while let Some(edge_idx) = outgoing.next_edge(graph) {
-            let edge_info = graph.edge_weight_mut(edge_idx).unwrap();
-            edge_info.visited = true;
+            graph[edge_idx].visited = true;
         }
 
         return;
@@ -44,30 +41,27 @@ fn update_node(graph: &mut DepGraph, idx: NodeIndex<u16>) {
     let mut incoming = graph.neighbors_directed(idx, Direction::Incoming).detach();
     let mut node_info: Option<DepInfo> = None;
     while let Some((edge_idx, node_idx)) = incoming.next(graph) {
-        let edge_info = graph.edge_weight(edge_idx).unwrap();
-        if !edge_info.visited {
+        if !graph[edge_idx].visited {
             update_node(graph, node_idx);
         }
 
-        let edge_info = graph.edge_weight(edge_idx).unwrap();
+        let edge_info = graph[edge_idx];
         assert!(edge_info.visited);
 
         if let Some(i) = &mut node_info {
             i.is_target_dep &= edge_info.is_target_dep;
             i.kind.combine_incoming(edge_info.kind);
         } else {
-            node_info = Some(*edge_info);
+            node_info = Some(edge_info);
         }
     }
 
     let node_info = node_info.expect("non-workspace members to have at least one incoming edge");
-
-    let package = graph.node_weight_mut(idx).unwrap();
-    package.dep_info = Some(node_info);
+    graph[idx].dep_info = Some(node_info);
 
     let mut outgoing = graph.neighbors_directed(idx, Direction::Outgoing).detach();
     while let Some(edge_idx) = outgoing.next_edge(graph) {
-        let edge_info = graph.edge_weight_mut(edge_idx).unwrap();
+        let edge_info = &mut graph[edge_idx];
         edge_info.visited = true;
         edge_info.is_target_dep |= node_info.is_target_dep;
         edge_info.kind.update_outgoing(node_info.kind);
