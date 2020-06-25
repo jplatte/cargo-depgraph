@@ -6,13 +6,13 @@ use cargo_metadata::{
 };
 use petgraph::{
     algo::all_simple_paths,
-    graph::{DiGraph, NodeIndex},
+    stable_graph::{NodeIndex, StableDiGraph},
     Direction,
 };
 
 use crate::{cli::Config, dep_info::DepInfo, package::Package};
 
-pub type DepGraph = DiGraph<Package, DepInfo, u16>;
+pub type DepGraph = StableDiGraph<Package, DepInfo, u16>;
 
 pub fn get_dep_graph(metadata: Metadata, config: &Config) -> anyhow::Result<DepGraph> {
     let mut builder = DepGraphBuilder::new(metadata)?;
@@ -23,7 +23,10 @@ pub fn get_dep_graph(metadata: Metadata, config: &Config) -> anyhow::Result<DepG
 }
 
 pub fn update_dep_info(graph: &mut DepGraph) {
-    for idx in graph.node_indices() {
+    for idx in graph.node_indices().collect::<Vec<_>>() {
+        // We're only mutating nodes, not adding or deleting them, so we can safely use the indices
+        // that were collected at the start thoughout to visit each node once (or more than once,
+        // in case we recurse inside update_node).
         update_node(graph, idx);
     }
 }
@@ -73,20 +76,34 @@ pub fn dedup_transitive_deps(graph: &mut DepGraph) {
     // this can probably be optimized.
     // maybe it would make sense to make this less conservative about what to remove.
 
-    for idx in graph.node_indices() {
+    for idx in graph.node_indices().collect::<Vec<_>>() {
+        // We're only removing nodes, not adding new ones, so we can use the node indices collected
+        // at the start as long as we check that they're still valid within the current graph.
+        if !graph.contains_node(idx) {
+            continue;
+        }
+
         let mut outgoing = graph.neighbors_directed(idx, Direction::Outgoing).detach();
         while let Some((edge_idx, node_idx)) = outgoing.next(graph) {
-            if graph.neighbors_directed(node_idx, Direction::Incoming).count() < 2 {
+            let any_paths =
+                all_simple_paths::<Vec<_>, _>(&*graph, idx, node_idx, 1, None).next().is_some();
+
+            if any_paths {
+                graph.remove_edge(edge_idx);
+            }
+
+            // Previous more conversative and also buggy version
+            /*if graph.neighbors_directed(node_idx, Direction::Incoming).count() < 2 {
                 // graph[idx] is the only node that depends on graph[node_idx], do nothing
                 break;
             }
 
-            let node_kind = graph[node_idx].dep_kind();
+            let node_kind = graph[idx].dep_kind();
             let paths: Vec<_> =
                 all_simple_paths::<Vec<_>, _>(&*graph, idx, node_idx, 1, None).collect();
             if paths.iter().any(|path| path.iter().all(|&i| graph[i].dep_kind() == node_kind)) {
                 graph.remove_edge(edge_idx);
-            }
+            }*/
         }
     }
 }
