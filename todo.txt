@@ -1,2 +1,4 @@
-- Store more than just NodeDep for edges (is_optional for root / workspace pkgs)
-  - What about conditionally activated features in a dependency?
+- Pass through options to `cargo metadata`
+  - Would make for awesome cargo features support
+- Add --exclude option
+- Subgraphs
