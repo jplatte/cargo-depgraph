@@ -5,6 +5,7 @@ use cargo_metadata::{
     DependencyKind as MetaDepKind, Metadata, Package as MetaPackage, PackageId, Resolve,
 };
 use petgraph::{
+    algo::all_simple_paths,
     graph::{DiGraph, NodeIndex},
     Direction,
 };
@@ -65,6 +66,28 @@ fn update_node(graph: &mut DepGraph, idx: NodeIndex<u16>) {
         edge_info.visited = true;
         edge_info.is_target_dep |= node_info.is_target_dep;
         edge_info.kind.update_outgoing(node_info.kind);
+    }
+}
+
+pub fn dedup_transitive_deps(graph: &mut DepGraph) {
+    // this can probably be optimized.
+    // maybe it would make sense to make this less conservative about what to remove.
+
+    for idx in graph.node_indices() {
+        let mut outgoing = graph.neighbors_directed(idx, Direction::Outgoing).detach();
+        while let Some((edge_idx, node_idx)) = outgoing.next(graph) {
+            if graph.neighbors_directed(node_idx, Direction::Incoming).count() < 2 {
+                // graph[idx] is the only node that depends on graph[node_idx], do nothing
+                break;
+            }
+
+            let node_kind = graph[node_idx].dep_kind();
+            let paths: Vec<_> =
+                all_simple_paths::<Vec<_>, _>(&*graph, idx, node_idx, 1, None).collect();
+            if paths.iter().any(|path| path.iter().all(|&i| graph[i].dep_kind() == node_kind)) {
+                graph.remove_edge(edge_idx);
+            }
+        }
     }
 }
 

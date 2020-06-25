@@ -3,7 +3,7 @@ use std::fmt::{self, Debug, Formatter};
 use cargo_metadata::Source;
 use semver::Version;
 
-use crate::dep_info::DepInfo;
+use crate::dep_info::{DepInfo, DepKind};
 
 #[derive(Clone)]
 pub struct Package {
@@ -21,6 +21,10 @@ impl Package {
             source: pkg.source,
             dep_info: if is_ws_member { None } else { Some(DepInfo::default()) },
         }
+    }
+
+    pub fn dep_kind(&self) -> DepKind {
+        self.dep_info.map(|di| di.kind).unwrap_or(DepKind::Normal)
     }
 }
 
