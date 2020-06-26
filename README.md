@@ -2,7 +2,13 @@
 
 Creates dependency graphs for cargo projects using `cargo metadata` and graphviz.
 
-Usage: `cargo depgraph [options] | dot -Tpng > graph.png`
+## Installation
+
+`cargo install --git https://git.sr.ht/~jplatte/cargo-depgraph`
+
+## Usage
+
+`cargo depgraph [options] | dot -Tpng > graph.png`
 
 Commonly useful options:
 
