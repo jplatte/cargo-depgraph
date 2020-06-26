@@ -14,11 +14,11 @@ pub struct Package {
 }
 
 impl Package {
-    pub fn new(pkg: cargo_metadata::Package, is_ws_member: bool) -> Self {
+    pub fn new(pkg: &cargo_metadata::Package, is_ws_member: bool) -> Self {
         Self {
-            name: pkg.name,
-            version: pkg.version,
-            source: pkg.source,
+            name: pkg.name.clone(),
+            version: pkg.version.clone(),
+            source: pkg.source.clone(),
             dep_info: if is_ws_member { None } else { Some(DepInfo::default()) },
         }
     }

@@ -54,6 +54,7 @@ fn update_node(graph: &mut DepGraph, idx: NodeIndex<u16>) {
 
         if let Some(i) = &mut node_info {
             i.is_target_dep &= edge_info.is_target_dep;
+            i.is_optional &= edge_info.is_optional;
             i.kind.combine_incoming(edge_info.kind);
         } else {
             node_info = Some(edge_info);
@@ -68,6 +69,7 @@ fn update_node(graph: &mut DepGraph, idx: NodeIndex<u16>) {
         let edge_info = &mut graph[edge_idx];
         edge_info.visited = true;
         edge_info.is_target_dep |= node_info.is_target_dep;
+        edge_info.is_optional |= edge_info.is_optional;
         edge_info.kind.update_outgoing(node_info.kind);
     }
 }
@@ -121,7 +123,7 @@ struct DepGraphBuilder {
     /// Workspace members, obtained from cargo_metadata.
     workspace_members: Vec<PackageId>,
     /// Package info obtained from cargo_metadata. To be transformed into graph nodes.
-    packages: Vec<Option<MetaPackage>>,
+    packages: Vec<MetaPackage>,
     /// The dependency graph obtained from cargo_metadata. To be transformed into graph edges.
     resolve: Resolve,
 }
@@ -141,15 +143,14 @@ impl DepGraphBuilder {
             deps_add_queue: VecDeque::new(),
 
             workspace_members: metadata.workspace_members,
-            packages: metadata.packages.into_iter().map(Some).collect(),
+            packages: metadata.packages,
             resolve,
         })
     }
 
     fn add_workspace_members(&mut self) -> anyhow::Result<()> {
         for pkg_id in &self.workspace_members {
-            let pkg =
-                pop_package(&mut self.packages, pkg_id).context("package not found in packages")?;
+            let pkg = get_package(&self.packages, pkg_id);
             let node_idx = self.graph.add_node(Package::new(pkg, true));
             self.deps_add_queue.push_back(pkg_id.clone());
             let old_val = self.node_indices.insert(pkg_id.clone(), node_idx);
@@ -166,6 +167,8 @@ impl DepGraphBuilder {
                 .get(&pkg_id)
                 .context("trying to add deps of package that's not in the graph")?;
 
+            let extra_dep_info = get_package(&self.packages, &pkg_id).dependencies.clone();
+
             let resolve_node = self
                 .resolve
                 .nodes
@@ -178,12 +181,11 @@ impl DepGraphBuilder {
                     continue;
                 }
 
-                let mut packages = &mut self.packages;
                 let child_idx = match self.node_indices.entry(dep.pkg.clone()) {
                     HashMapEntry::Occupied(o) => *o.get(),
                     HashMapEntry::Vacant(v) => {
-                        let pkg = pop_package(&mut packages, &dep.pkg).unwrap();
-                        let idx = self.graph.add_node(Package::new(pkg, false));
+                        let pkg = get_package(&self.packages, &dep.pkg);
+                        let idx = self.graph.add_node(Package::new(&pkg, false));
                         self.deps_add_queue.push_back(dep.pkg.clone());
                         v.insert(idx);
                         idx
@@ -191,6 +193,13 @@ impl DepGraphBuilder {
                 };
 
                 for info in &dep.dep_kinds {
+                    let extra = extra_dep_info.iter().find(|dep| {
+                        dep.kind == info.kind
+                            && dep.target.as_ref().map(|t| t.to_string())
+                                == info.target.as_ref().map(|t| t.to_string())
+                    });
+                    let is_optional = extra.map(|dep| dep.optional).unwrap_or(false);
+
                     // We checked whether to skip this dependency fully above, but if there's
                     // multiple dependencies from A to B (e.g. normal dependency with no features,
                     // dev-dependency with some features activated), we might have to skip adding
@@ -202,6 +211,7 @@ impl DepGraphBuilder {
                             DepInfo {
                                 kind: info.kind.into(),
                                 is_target_dep: info.target.is_some(),
+                                is_optional,
                                 visited: false,
                             },
                         );
@@ -214,11 +224,8 @@ impl DepGraphBuilder {
     }
 }
 
-fn pop_package(packages: &mut [Option<MetaPackage>], pkg_id: &PackageId) -> Option<MetaPackage> {
-    packages.iter_mut().find_map(|op| match op {
-        Some(p) if p.id == *pkg_id => op.take(),
-        _ => None,
-    })
+fn get_package<'a>(packages: &'a [MetaPackage], pkg_id: &PackageId) -> &'a MetaPackage {
+    packages.iter().find(|pkg| pkg.id == *pkg_id).unwrap()
 }
 
 pub fn skip_dep(config: &Config, info: &cargo_metadata::DepKindInfo) -> bool {

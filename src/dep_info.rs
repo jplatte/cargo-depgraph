@@ -3,9 +3,13 @@ use cargo_metadata::DependencyKind as MetaDepKind;
 #[derive(Clone, Copy, Debug, Default)]
 pub struct DepInfo {
     pub kind: DepKind,
+
     // TODO: instead collect targets, once we can actually evaluate whether they apply
     // (would be a really nice feature to show a linux- or windows-specific depgraph)
     pub is_target_dep: bool,
+
+    /// whether this dependency could be removed by deactivating a cargo feature
+    pub is_optional: bool,
 
     /// whether this edge has been updated by update_dep_info after being inserted into the graph
     pub visited: bool,

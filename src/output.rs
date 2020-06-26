@@ -19,6 +19,10 @@ pub fn dot(graph: &DepGraph) -> Dot<'_, &DepGraph> {
                 attrs.push("fillcolor = lightgrey");
             }
 
+            if dep.is_optional {
+                attrs.push("style = dashed");
+            }
+
             attrs.join(", ")
         },
         &|_, (_, pkg)| {
@@ -33,6 +37,10 @@ pub fn dot(graph: &DepGraph) -> Dot<'_, &DepGraph> {
                     if info.is_target_dep {
                         attrs.push("style = filled");
                         attrs.push("fillcolor = lightgrey");
+                    }
+
+                    if info.is_optional {
+                        attrs.push("style = dashed");
                     }
                 }
                 None => {
