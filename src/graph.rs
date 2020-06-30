@@ -69,7 +69,7 @@ fn update_node(graph: &mut DepGraph, idx: NodeIndex<u16>) {
         let edge_info = &mut graph[edge_idx];
         edge_info.visited = true;
         edge_info.is_target_dep |= node_info.is_target_dep;
-        edge_info.is_optional |= edge_info.is_optional;
+        edge_info.is_optional |= node_info.is_optional;
         edge_info.kind.update_outgoing(node_info.kind);
     }
 }
