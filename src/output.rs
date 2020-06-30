@@ -64,14 +64,14 @@ pub fn dot(graph: &DepGraph) -> Dot<'_, &DepGraph> {
 
 fn attr_for_dep_kind(kind: DepKind) -> Option<&'static str> {
     match kind {
-        DepKind::Normal => None,
-        DepKind::Dev => Some("color = blue"),
-        DepKind::Build => Some("color = green3"),
-        DepKind::BuildOfDev => Some("color = turquoise3"),
-        DepKind::NormalAndBuild => Some("color = darkgreen"),
-        DepKind::DevAndBuild => Some("color = darkviolet"),
-        DepKind::NormalAndBuildOfDev => Some("color = turquoise4"),
-        DepKind::DevAndBuildOfDev => Some("color = steelblue"),
-        DepKind::Unknown => Some("color = red"),
+        DepKind::NORMAL => None,
+        DepKind::DEV => Some("color = blue"),
+        DepKind::BUILD => Some("color = green3"),
+        DepKind::BUILD_OF_DEV => Some("color = turquoise3"),
+        DepKind::NORMAL_AND_BUILD => Some("color = darkgreen"),
+        DepKind::DEV_AND_BUILD => Some("color = darkviolet"),
+        DepKind::NORMAL_AND_BUILD_OF_DEV => Some("color = turquoise4"),
+        DepKind::DEV_AND_BUILD_OF_DEV => Some("color = steelblue"),
+        DepKind::UNKNOWN => Some("color = red"),
     }
 }

@@ -18,152 +18,132 @@ pub struct DepInfo {
     pub visited: bool,
 }
 
-// TODO: potentially collapse this into sth like
-// struct DepKind { host: BuildFlag, target: BuildFlag }
-// enum BuildFlag { Always, Test, Never }
-// (unknown could be represented by { host: Never, target: Never })
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum DepKind {
-    /// normal dep
-    ///
-    /// always built for target
-    Normal,
-    /// build dep
-    ///
-    /// always built for host
-    Build,
-    /// development dep (only compiled for tests)
-    ///
-    /// built for target in test mode
-    Dev,
-    /// build dep of development dep (only compiled for tests)
-    ///
-    /// built for host in test mode
-    BuildOfDev,
-    /// both normal dep and build dep (compiled twice if host != target or resolver v2 & normal dep
-    /// and build dep have different features activated)
-    ///
-    /// always built for target and host
-    NormalAndBuild,
-    /// both development dep and build dep (compiled twice for tests if host != target or resolver
-    /// v2 & dev dep and build dep have different features activated)
-    ///
-    /// always build for host, built for target in test mode
-    DevAndBuild,
-    /// both normal dep and build dep of development dep (compiled twice for tests if host != target
-    /// or resolver v2 & normal dep and build-of-dev dep have different features activated)
-    ///
-    /// always built for target, built for host in test mode
-    NormalAndBuildOfDev,
-    /// both development dep and build dep of development dep (compiled twice for tests if host !=
-    /// target or resolver v2 & dev dep and build-of-dev dep have different features activated)
-    ///
-    /// built for target and host in test mode
-    DevAndBuildOfDev,
-    /// unknown?
-    Unknown,
+pub struct DepKind {
+    pub host: BuildFlag,
+    pub target: BuildFlag,
 }
 
 impl DepKind {
+    pub const NORMAL: Self = Self { host: BuildFlag::Never, target: BuildFlag::Always };
+    pub const BUILD: Self = Self { host: BuildFlag::Always, target: BuildFlag::Never };
+    pub const DEV: Self = Self { host: BuildFlag::Never, target: BuildFlag::Test };
+
+    pub const BUILD_OF_DEV: Self = Self { host: BuildFlag::Test, target: BuildFlag::Never };
+    pub const NORMAL_AND_BUILD: Self = Self { host: BuildFlag::Always, target: BuildFlag::Always };
+    pub const DEV_AND_BUILD: Self = Self { host: BuildFlag::Always, target: BuildFlag::Test };
+    pub const NORMAL_AND_BUILD_OF_DEV: Self =
+        Self { host: BuildFlag::Test, target: BuildFlag::Always };
+    pub const DEV_AND_BUILD_OF_DEV: Self = Self { host: BuildFlag::Test, target: BuildFlag::Test };
+
+    pub const UNKNOWN: Self = Self { host: BuildFlag::Never, target: BuildFlag::Never };
+
     pub fn combine_incoming(&mut self, other: Self) {
         *self = match (*self, other) {
-            (DepKind::Unknown, _) | (_, DepKind::Unknown) => DepKind::Unknown,
+            (Self::UNKNOWN, _) | (_, Self::UNKNOWN) => Self::UNKNOWN,
 
-            (DepKind::NormalAndBuild, _)
-            | (_, DepKind::NormalAndBuild)
-            | (DepKind::Normal, DepKind::Build)
-            | (DepKind::Build, DepKind::Normal)
-            | (DepKind::NormalAndBuildOfDev, DepKind::Build | DepKind::DevAndBuild)
-            | (DepKind::Build | DepKind::DevAndBuild, DepKind::NormalAndBuildOfDev) => {
-                DepKind::NormalAndBuild
+            (Self::NORMAL_AND_BUILD, _)
+            | (_, Self::NORMAL_AND_BUILD)
+            | (Self::NORMAL, Self::BUILD)
+            | (Self::BUILD, Self::NORMAL)
+            | (Self::NORMAL_AND_BUILD_OF_DEV, Self::BUILD | Self::DEV_AND_BUILD)
+            | (Self::BUILD | Self::DEV_AND_BUILD, Self::NORMAL_AND_BUILD_OF_DEV) => {
+                Self::NORMAL_AND_BUILD
             }
 
-            (DepKind::NormalAndBuildOfDev, _)
-            | (_, DepKind::NormalAndBuildOfDev)
-            | (DepKind::Normal, DepKind::BuildOfDev)
-            | (DepKind::BuildOfDev, DepKind::Normal) => DepKind::NormalAndBuildOfDev,
+            (Self::NORMAL_AND_BUILD_OF_DEV, _)
+            | (_, Self::NORMAL_AND_BUILD_OF_DEV)
+            | (Self::NORMAL, Self::BUILD_OF_DEV)
+            | (Self::BUILD_OF_DEV, Self::NORMAL) => Self::NORMAL_AND_BUILD_OF_DEV,
 
-            (DepKind::DevAndBuild, _)
-            | (_, DepKind::DevAndBuild)
-            | (DepKind::Dev, DepKind::Build)
-            | (DepKind::Build, DepKind::Dev) => DepKind::DevAndBuild,
+            (Self::DEV_AND_BUILD, _)
+            | (_, Self::DEV_AND_BUILD)
+            | (Self::DEV, Self::BUILD)
+            | (Self::BUILD, Self::DEV) => Self::DEV_AND_BUILD,
 
-            (DepKind::DevAndBuildOfDev, _)
-            | (_, DepKind::DevAndBuildOfDev)
-            | (DepKind::Dev, DepKind::BuildOfDev)
-            | (DepKind::BuildOfDev, DepKind::Dev) => DepKind::DevAndBuildOfDev,
+            (Self::DEV_AND_BUILD_OF_DEV, _)
+            | (_, Self::DEV_AND_BUILD_OF_DEV)
+            | (Self::DEV, Self::BUILD_OF_DEV)
+            | (Self::BUILD_OF_DEV, Self::DEV) => Self::DEV_AND_BUILD_OF_DEV,
 
-            (DepKind::Normal, DepKind::Normal)
-            | (DepKind::Normal, DepKind::Dev)
-            | (DepKind::Dev, DepKind::Normal) => DepKind::Normal,
+            (Self::NORMAL, Self::NORMAL)
+            | (Self::NORMAL, Self::DEV)
+            | (Self::DEV, Self::NORMAL) => Self::NORMAL,
 
-            (DepKind::Build, DepKind::Build)
-            | (DepKind::Build, DepKind::BuildOfDev)
-            | (DepKind::BuildOfDev, DepKind::Build) => DepKind::Build,
+            (Self::BUILD, Self::BUILD)
+            | (Self::BUILD, Self::BUILD_OF_DEV)
+            | (Self::BUILD_OF_DEV, Self::BUILD) => Self::BUILD,
 
-            (DepKind::Dev, DepKind::Dev) => DepKind::Dev,
-            (DepKind::BuildOfDev, DepKind::BuildOfDev) => DepKind::BuildOfDev,
+            (Self::DEV, Self::DEV) => Self::DEV,
+            (Self::BUILD_OF_DEV, Self::BUILD_OF_DEV) => Self::BUILD_OF_DEV,
         };
     }
 
     pub fn update_outgoing(&mut self, node_kind: Self) {
         *self = match (node_kind, *self) {
             // don't update unknown outgoing edges
-            (_, DepKind::Unknown) => DepKind::Unknown,
+            (_, Self::UNKNOWN) => Self::UNKNOWN,
 
             // if node dep kind is unknown, keep the outgoing kind
-            (DepKind::Unknown, out) => out,
+            (Self::UNKNOWN, out) => out,
 
             // normal edges get the node kind
-            (out, DepKind::Normal) => out,
+            (out, Self::NORMAL) => out,
 
-            (DepKind::NormalAndBuild, _) => DepKind::NormalAndBuild,
-            (DepKind::NormalAndBuildOfDev, _) => DepKind::NormalAndBuildOfDev,
-            (DepKind::DevAndBuild, _) => DepKind::DevAndBuild,
-            (DepKind::DevAndBuildOfDev, _) => DepKind::DevAndBuildOfDev,
+            (Self::NORMAL_AND_BUILD, _) => Self::NORMAL_AND_BUILD,
+            (Self::NORMAL_AND_BUILD_OF_DEV, _) => Self::NORMAL_AND_BUILD_OF_DEV,
+            (Self::DEV_AND_BUILD, _) => Self::DEV_AND_BUILD,
+            (Self::DEV_AND_BUILD_OF_DEV, _) => Self::DEV_AND_BUILD_OF_DEV,
 
-            (DepKind::Dev, DepKind::Build | DepKind::BuildOfDev) => DepKind::BuildOfDev,
+            (Self::DEV, Self::BUILD | Self::BUILD_OF_DEV) => Self::BUILD_OF_DEV,
 
-            (DepKind::BuildOfDev, DepKind::Build | DepKind::BuildOfDev) => DepKind::BuildOfDev,
-            (DepKind::Normal | DepKind::Build, DepKind::Build) => DepKind::Build,
+            (Self::BUILD_OF_DEV, Self::BUILD | Self::BUILD_OF_DEV) => Self::BUILD_OF_DEV,
+            (Self::NORMAL | Self::BUILD, Self::BUILD) => Self::BUILD,
 
             // This function should never be called with dev dependencies, unless those got marked
             // as dev in an earlier update pass (hopefully we won't do multiple passes forever)
-            (DepKind::Dev, DepKind::Dev) => DepKind::Dev,
-            (n, DepKind::Dev) => {
+            (Self::DEV, Self::DEV) => Self::DEV,
+            (n, Self::DEV) => {
                 eprintln!("node {:?} has dev edge", n);
-                DepKind::Unknown
+                Self::UNKNOWN
             }
 
             // These should just be impossible in general
-            (DepKind::Normal | DepKind::Build, DepKind::BuildOfDev)
+            (Self::NORMAL | Self::BUILD, Self::BUILD_OF_DEV)
             | (
-                DepKind::Normal | DepKind::Build | DepKind::Dev | DepKind::BuildOfDev,
-                DepKind::NormalAndBuild
-                | DepKind::DevAndBuild
-                | DepKind::NormalAndBuildOfDev
-                | DepKind::DevAndBuildOfDev,
+                Self::NORMAL | Self::BUILD | Self::DEV | Self::BUILD_OF_DEV,
+                Self::NORMAL_AND_BUILD
+                | Self::DEV_AND_BUILD
+                | Self::NORMAL_AND_BUILD_OF_DEV
+                | Self::DEV_AND_BUILD_OF_DEV,
             ) => {
                 eprintln!("node {:?} has edge {:?}", node_kind, *self);
-                DepKind::Unknown
+                Self::UNKNOWN
             }
-        };
+        }
     }
 }
 
 impl Default for DepKind {
     fn default() -> Self {
-        DepKind::Normal
+        Self::from(MetaDepKind::Normal)
     }
 }
 
 impl From<MetaDepKind> for DepKind {
     fn from(kind: MetaDepKind) -> Self {
         match kind {
-            MetaDepKind::Normal => Self::Normal,
-            MetaDepKind::Build => Self::Build,
-            MetaDepKind::Development => Self::Dev,
-            MetaDepKind::Unknown => Self::Unknown,
+            MetaDepKind::Normal => Self::NORMAL,
+            MetaDepKind::Build => Self::BUILD,
+            MetaDepKind::Development => Self::DEV,
+            MetaDepKind::Unknown => Self::UNKNOWN,
         }
     }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum BuildFlag {
+    Always,
+    Test,
+    Never,
 }
