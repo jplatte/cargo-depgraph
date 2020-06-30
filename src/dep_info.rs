@@ -1,3 +1,5 @@
+use std::ops::{BitOr, BitOrAssign};
+
 use cargo_metadata::DependencyKind as MetaDepKind;
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -39,44 +41,12 @@ impl DepKind {
     pub const UNKNOWN: Self = Self { host: BuildFlag::Never, target: BuildFlag::Never };
 
     pub fn combine_incoming(&mut self, other: Self) {
-        *self = match (*self, other) {
-            (Self::UNKNOWN, _) | (_, Self::UNKNOWN) => Self::UNKNOWN,
-
-            (Self::NORMAL_AND_BUILD, _)
-            | (_, Self::NORMAL_AND_BUILD)
-            | (Self::NORMAL, Self::BUILD)
-            | (Self::BUILD, Self::NORMAL)
-            | (Self::NORMAL_AND_BUILD_OF_DEV, Self::BUILD | Self::DEV_AND_BUILD)
-            | (Self::BUILD | Self::DEV_AND_BUILD, Self::NORMAL_AND_BUILD_OF_DEV) => {
-                Self::NORMAL_AND_BUILD
-            }
-
-            (Self::NORMAL_AND_BUILD_OF_DEV, _)
-            | (_, Self::NORMAL_AND_BUILD_OF_DEV)
-            | (Self::NORMAL, Self::BUILD_OF_DEV)
-            | (Self::BUILD_OF_DEV, Self::NORMAL) => Self::NORMAL_AND_BUILD_OF_DEV,
-
-            (Self::DEV_AND_BUILD, _)
-            | (_, Self::DEV_AND_BUILD)
-            | (Self::DEV, Self::BUILD)
-            | (Self::BUILD, Self::DEV) => Self::DEV_AND_BUILD,
-
-            (Self::DEV_AND_BUILD_OF_DEV, _)
-            | (_, Self::DEV_AND_BUILD_OF_DEV)
-            | (Self::DEV, Self::BUILD_OF_DEV)
-            | (Self::BUILD_OF_DEV, Self::DEV) => Self::DEV_AND_BUILD_OF_DEV,
-
-            (Self::NORMAL, Self::NORMAL)
-            | (Self::NORMAL, Self::DEV)
-            | (Self::DEV, Self::NORMAL) => Self::NORMAL,
-
-            (Self::BUILD, Self::BUILD)
-            | (Self::BUILD, Self::BUILD_OF_DEV)
-            | (Self::BUILD_OF_DEV, Self::BUILD) => Self::BUILD,
-
-            (Self::DEV, Self::DEV) => Self::DEV,
-            (Self::BUILD_OF_DEV, Self::BUILD_OF_DEV) => Self::BUILD_OF_DEV,
-        };
+        if *self == Self::UNKNOWN || other == Self::UNKNOWN {
+            *self = Self::UNKNOWN;
+        } else {
+            self.host |= other.host;
+            self.target |= other.target;
+        }
     }
 
     pub fn update_outgoing(&mut self, node_kind: Self) {
@@ -146,4 +116,24 @@ pub enum BuildFlag {
     Always,
     Test,
     Never,
+}
+
+impl BitOr for BuildFlag {
+    type Output = Self;
+
+    fn bitor(self, rhs: Self) -> Self {
+        use BuildFlag::*;
+
+        match (self, rhs) {
+            (Never, Never) => Never,
+            (Never, Test) | (Test, Never) | (Test, Test) => Test,
+            _ => Always,
+        }
+    }
+}
+
+impl BitOrAssign for BuildFlag {
+    fn bitor_assign(&mut self, rhs: Self) {
+        *self = *self | rhs;
+    }
 }
