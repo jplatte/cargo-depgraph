@@ -1,4 +1,4 @@
-use std::ops::{BitOr, BitOrAssign};
+use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign};
 
 use cargo_metadata::DependencyKind as MetaDepKind;
 
@@ -50,46 +50,21 @@ impl DepKind {
     }
 
     pub fn update_outgoing(&mut self, node_kind: Self) {
-        *self = match (node_kind, *self) {
-            // don't update unknown outgoing edges
-            (_, Self::UNKNOWN) => Self::UNKNOWN,
-
-            // if node dep kind is unknown, keep the outgoing kind
-            (Self::UNKNOWN, out) => out,
-
-            // normal edges get the node kind
-            (out, Self::NORMAL) => out,
-
-            (Self::NORMAL_AND_BUILD, _) => Self::NORMAL_AND_BUILD,
-            (Self::NORMAL_AND_BUILD_OF_DEV, _) => Self::NORMAL_AND_BUILD_OF_DEV,
-            (Self::DEV_AND_BUILD, _) => Self::DEV_AND_BUILD,
-            (Self::DEV_AND_BUILD_OF_DEV, _) => Self::DEV_AND_BUILD_OF_DEV,
-
-            (Self::DEV, Self::BUILD | Self::BUILD_OF_DEV) => Self::BUILD_OF_DEV,
-
-            (Self::BUILD_OF_DEV, Self::BUILD | Self::BUILD_OF_DEV) => Self::BUILD_OF_DEV,
-            (Self::NORMAL | Self::BUILD, Self::BUILD) => Self::BUILD,
-
-            // This function should never be called with dev dependencies, unless those got marked
-            // as dev in an earlier update pass (hopefully we won't do multiple passes forever)
-            (Self::DEV, Self::DEV) => Self::DEV,
-            (n, Self::DEV) => {
-                eprintln!("node {:?} has dev edge", n);
-                Self::UNKNOWN
-            }
-
-            // These should just be impossible in general
-            (Self::NORMAL | Self::BUILD, Self::BUILD_OF_DEV)
-            | (
-                Self::NORMAL | Self::BUILD | Self::DEV | Self::BUILD_OF_DEV,
-                Self::NORMAL_AND_BUILD
-                | Self::DEV_AND_BUILD
-                | Self::NORMAL_AND_BUILD_OF_DEV
-                | Self::DEV_AND_BUILD_OF_DEV,
-            ) => {
-                eprintln!("node {:?} has edge {:?}", node_kind, *self);
-                Self::UNKNOWN
-            }
+        if *self == Self::UNKNOWN || node_kind == Self::UNKNOWN {
+            // do nothing
+        } else if *self == Self::NORMAL {
+            *self = node_kind;
+        } else if *self == Self::DEV {
+            self.host &= BuildFlag::Test;
+            self.target &= BuildFlag::Test;
+        } else if *self == Self::BUILD {
+            self.target = BuildFlag::Never;
+        } else {
+            eprintln!(
+                "warning: node {:?} has edge {:?}, this should never happen.",
+                node_kind, self
+            );
+            *self = Self::UNKNOWN;
         }
     }
 }
@@ -116,6 +91,26 @@ pub enum BuildFlag {
     Always,
     Test,
     Never,
+}
+
+impl BitAnd for BuildFlag {
+    type Output = Self;
+
+    fn bitand(self, rhs: Self) -> Self {
+        use BuildFlag::*;
+
+        match (self, rhs) {
+            (Always, Always) => Always,
+            (Always, Test) | (Test, Always) | (Test, Test) => Test,
+            _ => Never,
+        }
+    }
+}
+
+impl BitAndAssign for BuildFlag {
+    fn bitand_assign(&mut self, rhs: Self) {
+        *self = *self & rhs;
+    }
 }
 
 impl BitOr for BuildFlag {

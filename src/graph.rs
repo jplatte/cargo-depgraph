@@ -67,6 +67,12 @@ fn update_node(graph: &mut DepGraph, idx: NodeIndex<u16>) {
     let mut outgoing = graph.neighbors_directed(idx, Direction::Outgoing).detach();
     while let Some(edge_idx) = outgoing.next_edge(graph) {
         let edge_info = &mut graph[edge_idx];
+
+        // it's unclear to me why this happens... maybe a bug in petgraph?
+        if edge_info.visited {
+            continue;
+        }
+
         edge_info.visited = true;
         edge_info.is_target_dep |= node_info.is_target_dep;
         edge_info.is_optional |= node_info.is_optional;

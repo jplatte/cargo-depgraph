@@ -1,5 +1,3 @@
-#![feature(or_patterns)]
-
 use cargo_metadata::MetadataCommand;
 
 // `DepInfo` represents the data associated with dependency graph edges
