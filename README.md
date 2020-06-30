@@ -4,7 +4,7 @@ Creates dependency graphs for cargo projects using `cargo metadata` and graphviz
 
 ## Installation
 
-`cargo install --git https://git.sr.ht/~jplatte/cargo-depgraph`
+`cargo +nightly install --git https://git.sr.ht/~jplatte/cargo-depgraph`
 
 ## Usage
 
