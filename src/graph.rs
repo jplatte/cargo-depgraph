@@ -218,6 +218,7 @@ impl DepGraphBuilder {
                                 kind: info.kind.into(),
                                 is_target_dep: info.target.is_some(),
                                 is_optional,
+                                is_optional_direct: is_optional,
                                 visited: false,
                             },
                         );

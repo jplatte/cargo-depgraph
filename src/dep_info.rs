@@ -11,6 +11,9 @@ pub struct DepInfo {
     /// whether this dependency could be removed by deactivating a cargo feature
     pub is_optional: bool,
 
+    /// if optional, whether this is optional directly or transitively
+    pub is_optional_direct: bool,
+
     /// whether this edge has been updated by update_dep_info after being inserted into the graph
     pub visited: bool,
 }

@@ -24,7 +24,9 @@ Output explanation:
 
 * square node = root / workspace member
 * grey background = target-specific dependency
-* dashed lines = optional dependency (could be removed by disabling a cargo feature)
+* dotted lines = optional dependency (could be removed by disabling a cargo feature)
+* dashed lines = transitively optional dependency (could be removed by removing one of the dotted
+  edges)
 * line colors = dependency kinds w.r.t. root / workspace members
   * black = normal
   * blue = dev-dependency

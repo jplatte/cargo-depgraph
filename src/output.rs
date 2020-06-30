@@ -19,7 +19,9 @@ pub fn dot(graph: &DepGraph) -> Dot<'_, &DepGraph> {
                 attrs.push("fillcolor = lightgrey");
             }
 
-            if dep.is_optional {
+            if dep.is_optional_direct {
+                attrs.push("style = dotted");
+            } else if dep.is_optional {
                 attrs.push("style = dashed");
             }
 
