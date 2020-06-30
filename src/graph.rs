@@ -193,9 +193,15 @@ impl DepGraphBuilder {
                 };
 
                 for info in &dep.dep_kinds {
-                    let extra = extra_dep_info.iter().find(|dep| {
-                        dep.kind == info.kind
-                            && dep.target.as_ref().map(|t| t.to_string())
+                    let extra = extra_dep_info.iter().find(|d| {
+                        // `dep.name` is not the source crate name but the one used for that
+                        // dependency in the parent, so if the dependency is renamed, we need to use
+                        // the alternative name.
+                        let name = d.rename.as_ref().unwrap_or(&d.name);
+
+                        *name == dep.name
+                            && d.kind == info.kind
+                            && d.target.as_ref().map(|t| t.to_string())
                                 == info.target.as_ref().map(|t| t.to_string())
                     });
                     let is_optional = extra.map(|dep| dep.optional).unwrap_or(false);

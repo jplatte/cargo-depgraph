@@ -34,13 +34,19 @@ pub fn dot(graph: &DepGraph) -> Dot<'_, &DepGraph> {
                         attrs.push(attr);
                     }
 
-                    if info.is_target_dep {
-                        attrs.push("style = filled");
-                        attrs.push("fillcolor = lightgrey");
-                    }
-
-                    if info.is_optional {
-                        attrs.push("style = dashed");
+                    match (info.is_target_dep, info.is_optional) {
+                        (true, true) => {
+                            attrs.push("style = \"dashed,filled\"");
+                            attrs.push("fillcolor = lightgrey");
+                        }
+                        (true, false) => {
+                            attrs.push("style = filled");
+                            attrs.push("fillcolor = lightgrey");
+                        }
+                        (false, true) => {
+                            attrs.push("style = dashed");
+                        }
+                        (false, false) => {}
                     }
                 }
                 None => {
