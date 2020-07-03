@@ -1,6 +1,0 @@
-- Pass through options to `cargo metadata`
-  - Would make for awesome cargo features support
-- Add --exclude option
-- Subgraphs
-- Fix no_normal_deps to only remove normal deps after dependency kind analysis
-- Disambiguate multiple crates with the same name
