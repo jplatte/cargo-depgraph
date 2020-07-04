@@ -10,6 +10,7 @@ pub struct Config {
 
 pub fn parse_options() -> Config {
     let matches = App::new("cargo-depgraph")
+        .bin_name("cargo")
         .version(env!("CARGO_PKG_VERSION"))
         .subcommand(
             SubCommand::with_name("depgraph")
