@@ -1,4 +1,4 @@
-use clap::{App, Arg, SubCommand};
+use clap::{App, AppSettings, Arg, SubCommand};
 
 pub struct Config {
     pub normal_deps: bool,
@@ -6,6 +6,16 @@ pub struct Config {
     pub dev_deps: bool,
     pub target_deps: bool,
     pub dedup_transitive_deps: bool,
+
+    pub features: Vec<String>,
+    pub all_features: bool,
+    pub no_default_features: bool,
+    pub filter_platform: Vec<String>,
+    pub manifest_path: Option<String>,
+    pub frozen: bool,
+    pub locked: bool,
+    pub offline: bool,
+    pub unstable_flags: Vec<String>,
 }
 
 pub fn parse_options() -> Config {
@@ -14,6 +24,7 @@ pub fn parse_options() -> Config {
         .version(env!("CARGO_PKG_VERSION"))
         .subcommand(
             SubCommand::with_name("depgraph")
+                .settings(&[AppSettings::DeriveDisplayOrder, AppSettings::UnifiedHelpMessage])
                 .arg(Arg::with_name("all_deps").long("all-deps").help(
                     "Include all dependencies in the graph \
                     (shorthand for --build-deps --dev-deps --target-deps)",
@@ -41,7 +52,66 @@ pub fn parse_options() -> Config {
                 .arg(Arg::with_name("dedup_transitive_deps").long("dedup-transitive-deps").help(
                     "Remove direct dependency edges where there's at \
                     least one transitive dependency of the same kind.",
-                )),
+                ))
+                // Options to pass through to `cargo metadata`
+                .arg(
+                    Arg::with_name("features")
+                        .long("features")
+                        .help("Space-separated list of features to activate")
+                        .multiple(true)
+                        .number_of_values(1)
+                        .value_name("FEATURES"),
+                )
+                .arg(
+                    Arg::with_name("all_features")
+                        .long("all-features")
+                        .help("Activate all available features"),
+                )
+                .arg(
+                    Arg::with_name("no_default_features")
+                        .long("no-default-features")
+                        .help("Do not activate the `default` feature"),
+                )
+                .arg(
+                    Arg::with_name("filter_platform")
+                        .long("filter-platform")
+                        .help("Only include resolve dependencies matching the given target-triple")
+                        .multiple(true)
+                        .number_of_values(1)
+                        .value_name("TRIPLE"),
+                )
+                .arg(
+                    Arg::with_name("manifest_path")
+                        .long("manifest-path")
+                        .help("Path to Cargo.toml")
+                        .value_name("PATH"),
+                )
+                .arg(
+                    Arg::with_name("frozen")
+                        .long("frozen")
+                        .help("Require Cargo.lock and cache are up to date"),
+                )
+                .arg(
+                    Arg::with_name("locked")
+                        .long("locked")
+                        .help("Require Cargo.lock is up to date"),
+                )
+                .arg(
+                    Arg::with_name("offline")
+                        .long("offline")
+                        .help("Run without accessing the network"),
+                )
+                .arg(
+                    Arg::with_name("unstable_flags")
+                        .short("Z")
+                        .help(
+                            "Unstable (nightly-only) flags to Cargo, see \
+                            'cargo -Z help' for details",
+                        )
+                        .value_name("FLAG")
+                        .multiple(true)
+                        .number_of_values(1),
+                ),
         )
         .get_matches();
 
@@ -54,5 +124,37 @@ pub fn parse_options() -> Config {
     let target_deps = all_deps || matches.is_present("target_deps");
     let dedup_transitive_deps = matches.is_present("dedup_transitive_deps");
 
-    Config { normal_deps, build_deps, dev_deps, target_deps, dedup_transitive_deps }
+    fn collect_owned<'a, T>(iter: impl Iterator<Item = &'a T>) -> Vec<T::Owned>
+    where
+        T: ?Sized + ToOwned + 'a,
+    {
+        iter.map(ToOwned::to_owned).collect()
+    }
+
+    let features = matches.values_of("features").map_or_else(Vec::new, collect_owned);
+    let all_features = matches.is_present("all_features");
+    let no_default_features = matches.is_present("no_default_features");
+    let filter_platform = matches.values_of("filter_platform").map_or_else(Vec::new, collect_owned);
+    let manifest_path = matches.value_of("manifest_path").map(ToOwned::to_owned);
+    let frozen = matches.is_present("frozen");
+    let locked = matches.is_present("locked");
+    let offline = matches.is_present("offline");
+    let unstable_flags = matches.values_of("unstable_flags").map_or_else(Vec::new, collect_owned);
+
+    Config {
+        normal_deps,
+        build_deps,
+        dev_deps,
+        target_deps,
+        dedup_transitive_deps,
+        features,
+        all_features,
+        no_default_features,
+        filter_platform,
+        manifest_path,
+        frozen,
+        locked,
+        offline,
+        unstable_flags,
+    }
 }

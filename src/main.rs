@@ -1,3 +1,5 @@
+use std::iter;
+
 use cargo_metadata::MetadataCommand;
 
 // `DepInfo` represents the data associated with dependency graph edges
@@ -21,7 +23,34 @@ use self::{
 
 fn main() -> anyhow::Result<()> {
     let config = parse_options();
-    let metadata = MetadataCommand::new().exec()?;
+    let mut cmd = MetadataCommand::new();
+
+    if let Some(path) = &config.manifest_path {
+        cmd.manifest_path(path);
+    }
+
+    let mut other_options = Vec::new();
+    other_options.extend(config.features.iter().flat_map(|f| cli_args("--features", f)));
+    if config.all_features {
+        other_options.push("--all-features".into());
+    }
+    if config.no_default_features {
+        other_options.push("--no-default-features".into());
+    }
+    other_options
+        .extend(config.filter_platform.iter().flat_map(|p| cli_args("--filter-platform", p)));
+    if config.frozen {
+        other_options.push("--frozen".into());
+    }
+    if config.locked {
+        other_options.push("--locked".into());
+    }
+    if config.offline {
+        other_options.push("--offline".into());
+    }
+    other_options.extend(config.unstable_flags.iter().flat_map(|f| cli_args("-Z", f)));
+
+    let metadata = cmd.other_options(other_options).exec()?;
 
     let mut graph = get_dep_graph(metadata, &config)?;
     update_dep_info(&mut graph);
@@ -32,4 +61,8 @@ fn main() -> anyhow::Result<()> {
     println!("{:?}", dot(&graph));
 
     Ok(())
+}
+
+fn cli_args(opt_name: &str, val: &str) -> impl Iterator<Item = String> {
+    iter::once(opt_name.into()).chain(iter::once(val.into()))
 }
