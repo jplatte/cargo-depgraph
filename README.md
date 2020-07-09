@@ -4,7 +4,7 @@ Creates dependency graphs for cargo projects using `cargo metadata` and graphviz
 
 ## Installation
 
-`cargo install --git https://git.sr.ht/~jplatte/cargo-depgraph`
+`cargo install cargo-depgraph`
 
 ## Usage
 
@@ -20,7 +20,12 @@ Commonly useful options:
 
 ![cargo-depgraph's dependency graph with transitive dependency edges de-duplicated](graph_all_deduped.png)
 
-Output explanation:
+## Known issues
+
+* [`--no-normal-deps` removes too many crates](https://todo.sr.ht/~jplatte/cargo-depgraph/6)
+* [Multiple versions of the same crate / multiple crates of the same name cannot be distinguished](https://todo.sr.ht/~jplatte/cargo-depgraph/7)
+
+## Output explanation
 
 * square node = root / workspace member
 * grey background = target-specific dependency
