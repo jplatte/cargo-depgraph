@@ -10,7 +10,11 @@ use petgraph::{
     Direction,
 };
 
-use crate::{cli::Config, dep_info::DepInfo, package::Package};
+use crate::{
+    cli::Config,
+    dep_info::{DepInfo, DepKind},
+    package::Package,
+};
 
 pub type DepGraph = StableDiGraph<Package, DepInfo, u16>;
 
@@ -187,11 +191,17 @@ impl DepGraphBuilder {
                     continue;
                 }
 
+                let pkg = get_package(&self.packages, &dep.pkg);
+                let is_proc_macro = is_proc_macro(pkg);
+
+                if is_proc_macro && !config.build_deps {
+                    continue;
+                }
+
                 let child_idx = match self.node_indices.entry(dep.pkg.clone()) {
                     HashMapEntry::Occupied(o) => *o.get(),
                     HashMapEntry::Vacant(v) => {
-                        let pkg = get_package(&self.packages, &dep.pkg);
-                        let idx = self.graph.add_node(Package::new(&pkg, false));
+                        let idx = self.graph.add_node(Package::new(pkg, false));
                         self.deps_add_queue.push_back(dep.pkg.clone());
                         v.insert(idx);
                         idx
@@ -221,7 +231,7 @@ impl DepGraphBuilder {
                             parent_idx,
                             child_idx,
                             DepInfo {
-                                kind: info.kind.into(),
+                                kind: if is_proc_macro { DepKind::BUILD } else { info.kind.into() },
                                 is_target_dep: info.target.is_some(),
                                 is_optional,
                                 is_optional_direct: is_optional,
@@ -239,6 +249,15 @@ impl DepGraphBuilder {
 
 fn get_package<'a>(packages: &'a [MetaPackage], pkg_id: &PackageId) -> &'a MetaPackage {
     packages.iter().find(|pkg| pkg.id == *pkg_id).unwrap()
+}
+
+fn is_proc_macro(pkg: &MetaPackage) -> bool {
+    let res = pkg.targets.iter().any(|t| t.kind.iter().any(|k| k == "proc-macro"));
+    if res && pkg.targets.iter().any(|t| t.kind.iter().any(|k| k == "lib")) {
+        eprintln!("enountered a crate that is both a regular library and a proc-macro");
+    }
+
+    res
 }
 
 pub fn skip_dep(config: &Config, info: &cargo_metadata::DepKindInfo) -> bool {
