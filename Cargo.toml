@@ -4,6 +4,12 @@ version = "0.1.0"
 authors = ["Jonas Platte <jplatte@posteo.de>"]
 license = "GPL-3.0-or-later"
 edition = "2018"
+description = "Creates dependency graphs for cargo projects using `cargo metadata` and graphviz."
+homepage = "https://sr.ht/~jplatte/cargo-depgraph/"
+repository = "https://git.sr.ht/~jplatte/cargo-depgraph"
+readme = "README.md"
+categories = ["development-tools::cargo-plugins", "visualization"]
+exclude = [".gitignore", ".rustfmt.toml"]
 
 [dependencies]
 anyhow = "1.0.31"
