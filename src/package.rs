@@ -30,6 +30,10 @@ impl Package {
         }
     }
 
+    pub fn is_root(&self) -> bool {
+        self.dep_info.is_none()
+    }
+
     //pub fn dep_kind(&self) -> DepKind {
     //    self.dep_info.map(|di| di.kind).unwrap_or(DepKind::Normal)
     //}

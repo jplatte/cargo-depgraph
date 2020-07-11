@@ -5,6 +5,7 @@ pub struct Config {
     pub dev_deps: bool,
     pub target_deps: bool,
     pub dedup_transitive_deps: bool,
+    pub exclude: Vec<String>,
 
     pub features: Vec<String>,
     pub all_features: bool,
@@ -47,6 +48,16 @@ pub fn parse_options() -> Config {
                     "Remove direct dependency edges where there's at \
                     least one transitive dependency of the same kind.",
                 ))
+                .arg(
+                    Arg::with_name("exclude")
+                        .long("exclude")
+                        .multiple(true)
+                        .use_delimiter(true)
+                        .help(
+                            "List of package names to ignore; can be given as a
+                            comma-separated list or as multiple arguments",
+                        ),
+                )
                 // Options to pass through to `cargo metadata`
                 .arg(
                     Arg::with_name("features")
@@ -116,13 +127,7 @@ pub fn parse_options() -> Config {
     let dev_deps = all_deps || matches.is_present("dev_deps");
     let target_deps = all_deps || matches.is_present("target_deps");
     let dedup_transitive_deps = matches.is_present("dedup_transitive_deps");
-
-    fn collect_owned<'a, T>(iter: impl Iterator<Item = &'a T>) -> Vec<T::Owned>
-    where
-        T: ?Sized + ToOwned + 'a,
-    {
-        iter.map(ToOwned::to_owned).collect()
-    }
+    let exclude = matches.values_of("exclude").map_or_else(Vec::new, collect_owned);
 
     let features = matches.values_of("features").map_or_else(Vec::new, collect_owned);
     let all_features = matches.is_present("all_features");
@@ -139,6 +144,7 @@ pub fn parse_options() -> Config {
         dev_deps,
         target_deps,
         dedup_transitive_deps,
+        exclude,
         features,
         all_features,
         no_default_features,
@@ -149,4 +155,11 @@ pub fn parse_options() -> Config {
         offline,
         unstable_flags,
     }
+}
+
+fn collect_owned<'a, T>(iter: impl Iterator<Item = &'a T>) -> Vec<T::Owned>
+where
+    T: ?Sized + ToOwned + 'a,
+{
+    iter.map(ToOwned::to_owned).collect()
 }

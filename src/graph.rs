@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use cargo_metadata::Metadata;
 use petgraph::{
     algo::all_simple_paths,
@@ -76,6 +78,35 @@ fn update_node(graph: &mut DepGraph, idx: NodeIndex<u16>) {
         edge_info.is_target_dep |= node_info.is_target_dep;
         edge_info.is_optional |= node_info.is_optional;
         edge_info.kind.update_outgoing(node_info.kind);
+    }
+}
+
+pub fn remove_excluded_deps(graph: &mut DepGraph, exclude: &[String]) {
+    let mut visit_queue: VecDeque<_> = graph.node_indices().collect();
+    while let Some(idx) = visit_queue.pop_front() {
+        // A node can end up being in the list multiple times. If it was already removed by a
+        // previous iteration of this loop, skip it.
+        if !graph.contains_node(idx) {
+            continue;
+        }
+
+        let pkg = &graph[idx];
+        let is_excluded = exclude.contains(&pkg.name);
+
+        if !is_excluded
+            && (graph.neighbors_directed(idx, Direction::Incoming).next().is_some()
+                || pkg.is_root())
+        {
+            // If the package is not explicitly excluded and also has incoming edges or is a root
+            // (currently workspace members only), don't remove it and continue with the queue.
+            continue;
+        }
+
+        // The package node at `idx` should be removed.
+        // => First add its dependencies to the visit queue
+        visit_queue.extend(graph.neighbors_directed(idx, Direction::Outgoing));
+        // => Then actually remove it
+        graph.remove_node(idx);
     }
 }
 
