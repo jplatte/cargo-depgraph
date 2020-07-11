@@ -9,7 +9,7 @@ homepage = "https://sr.ht/~jplatte/cargo-depgraph/"
 repository = "https://git.sr.ht/~jplatte/cargo-depgraph"
 readme = "README.md"
 categories = ["development-tools::cargo-plugins", "visualization"]
-exclude = [".gitignore", ".rustfmt.toml"]
+exclude = [".gitignore", ".rustfmt.toml", "*.png"]
 
 [dependencies]
 anyhow = "1.0.31"
