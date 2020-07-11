@@ -1,4 +1,8 @@
-use std::fmt::{self, Debug, Formatter};
+use std::{
+    cell::Cell,
+    fmt::{self, Debug, Formatter},
+    rc::Rc,
+};
 
 use cargo_metadata::Source;
 use semver::Version;
@@ -11,6 +15,8 @@ pub struct Package {
     pub version: Version,
     pub source: Option<Source>,
     pub dep_info: Option<DepInfo>,
+
+    pub name_uses: Option<Rc<Cell<u16>>>,
 }
 
 impl Package {
@@ -20,6 +26,7 @@ impl Package {
             version: pkg.version.clone(),
             source: pkg.source.clone(),
             dep_info: if is_ws_member { None } else { Some(DepInfo::default()) },
+            name_uses: None,
         }
     }
 
@@ -29,8 +36,12 @@ impl Package {
 }
 
 impl Debug for Package {
-    // TODO: Allow writing version and such
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.name)
+        write!(f, "{}", self.name)?;
+        if self.name_uses.as_ref().unwrap().get() > 1 {
+            write!(f, " {}", self.version)?;
+        }
+
+        Ok(())
     }
 }

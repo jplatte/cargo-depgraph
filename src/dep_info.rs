@@ -17,6 +17,7 @@ pub struct DepInfo {
     pub is_optional_direct: bool,
 
     /// whether this edge has been updated by update_dep_info after being inserted into the graph
+    // TODO: Store separately from DepInfo, make dedicated enum
     pub visited: bool,
 }
 

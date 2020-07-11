@@ -9,6 +9,8 @@ mod package;
 
 // Contains the `DepGraph` type and most of the graph building / analysis logic
 mod graph;
+// Contains some auxiliary logic (currently just checking for packages of the same name)
+mod util;
 
 // Command-line parsing
 mod cli;
@@ -19,6 +21,7 @@ use self::{
     cli::parse_options,
     graph::{dedup_transitive_deps, get_dep_graph, update_dep_info},
     output::dot,
+    util::set_name_stats,
 };
 
 fn main() -> anyhow::Result<()> {
@@ -57,6 +60,7 @@ fn main() -> anyhow::Result<()> {
     if config.dedup_transitive_deps {
         dedup_transitive_deps(&mut graph);
     }
+    set_name_stats(&mut graph);
 
     println!("{:?}", dot(&graph));
 
