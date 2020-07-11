@@ -10,6 +10,10 @@ Creates dependency graphs for cargo projects using `cargo metadata` and graphviz
 
 `cargo depgraph [options] | dot -Tpng > graph.png`
 
+The full list of options can be seen by running
+
+`cargo depgraph --help`
+
 Commonly useful options:
 
 * `--all-deps`
