@@ -6,6 +6,7 @@ pub struct Config {
     pub target_deps: bool,
     pub dedup_transitive_deps: bool,
     pub exclude: Vec<String>,
+    pub focus: Vec<String>,
 
     pub features: Vec<String>,
     pub all_features: bool,
@@ -54,10 +55,15 @@ pub fn parse_options() -> Config {
                         .multiple(true)
                         .use_delimiter(true)
                         .help(
-                            "List of package names to ignore; can be given as a
+                            "Package name(s) to ignore; can be given as a
                             comma-separated list or as multiple arguments",
                         ),
                 )
+                .arg(Arg::with_name("focus").long("focus").multiple(true).use_delimiter(true).help(
+                    "Package name(s) to focus on: only the given packages, the workspace members
+                    that depend on them and any intermediate dependencies are going to be present in
+                    the output; can be given as a comma-separated list or as multiple arguments",
+                ))
                 // Options to pass through to `cargo metadata`
                 .arg(
                     Arg::with_name("features")
@@ -128,6 +134,7 @@ pub fn parse_options() -> Config {
     let target_deps = all_deps || matches.is_present("target_deps");
     let dedup_transitive_deps = matches.is_present("dedup_transitive_deps");
     let exclude = matches.values_of("exclude").map_or_else(Vec::new, collect_owned);
+    let focus = matches.values_of("focus").map_or_else(Vec::new, collect_owned);
 
     let features = matches.values_of("features").map_or_else(Vec::new, collect_owned);
     let all_features = matches.is_present("all_features");
@@ -145,6 +152,7 @@ pub fn parse_options() -> Config {
         target_deps,
         dedup_transitive_deps,
         exclude,
+        focus,
         features,
         all_features,
         no_default_features,

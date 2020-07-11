@@ -81,6 +81,32 @@ fn update_node(graph: &mut DepGraph, idx: NodeIndex<u16>) {
     }
 }
 
+pub fn remove_irrelevant_deps(graph: &mut DepGraph, focus: &[String]) {
+    let mut visit_queue: VecDeque<_> = graph.externals(Direction::Outgoing).collect();
+    while let Some(idx) = visit_queue.pop_front() {
+        // A node can end up being in the list multiple times. If it was already removed by a
+        // previous iteration of this loop, skip it.
+        if !graph.contains_node(idx) {
+            continue;
+        }
+
+        let pkg = &graph[idx];
+        if focus.contains(&pkg.name)
+            || graph.neighbors_directed(idx, Direction::Outgoing).next().is_some()
+        {
+            // If the package is focused or has outgoing edges, don't remove it and continue with
+            // the queue.
+            continue;
+        }
+
+        // The package node at `idx` should be removed.
+        // => First add its dependencies to the visit queue
+        visit_queue.extend(graph.neighbors_directed(idx, Direction::Incoming));
+        // => Then actually remove it
+        graph.remove_node(idx);
+    }
+}
+
 pub fn remove_excluded_deps(graph: &mut DepGraph, exclude: &[String]) {
     let mut visit_queue: VecDeque<_> = graph.node_indices().collect();
     while let Some(idx) = visit_queue.pop_front() {
