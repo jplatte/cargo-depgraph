@@ -152,8 +152,7 @@ fn is_proc_macro(pkg: &MetaPackage) -> bool {
 }
 
 pub fn skip_dep(config: &Config, info: &cargo_metadata::DepKindInfo) -> bool {
-    (!config.normal_deps && info.kind == MetaDepKind::Normal)
-        || (!config.build_deps && info.kind == MetaDepKind::Build)
+    (!config.build_deps && info.kind == MetaDepKind::Build)
         || (!config.dev_deps && info.kind == MetaDepKind::Development)
         || (!config.target_deps && info.target.is_some())
 }
