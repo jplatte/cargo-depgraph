@@ -120,8 +120,6 @@ pub fn dedup_transitive_deps(graph: &mut DepGraph) {
     }
 }
 
-// TODO: Clone DepKindInfo to be able to distinguish build-dep of test-dep from just test-dep
-
 struct DepGraphBuilder {
     /// The dependency graph being built.
     graph: DepGraph,
