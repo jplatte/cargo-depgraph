@@ -63,12 +63,12 @@ impl DepGraphBuilder {
 
     pub fn add_dependencies(&mut self, config: &Config) -> anyhow::Result<()> {
         while let Some(pkg_id) = self.deps_add_queue.pop_front() {
+            let pkg = get_package(&self.packages, &pkg_id);
+
             let parent_idx = *self
                 .node_indices
                 .get(&pkg_id)
                 .context("trying to add deps of package that's not in the graph")?;
-
-            let extra_dep_info = get_package(&self.packages, &pkg_id).dependencies.clone();
 
             let resolve_node = self
                 .resolve
@@ -82,8 +82,8 @@ impl DepGraphBuilder {
                     continue;
                 }
 
-                let pkg = get_package(&self.packages, &dep.pkg);
-                let is_proc_macro = is_proc_macro(pkg);
+                let dep_pkg = get_package(&self.packages, &dep.pkg);
+                let is_proc_macro = is_proc_macro(dep_pkg);
 
                 if is_proc_macro && !config.build_deps {
                     continue;
@@ -92,7 +92,7 @@ impl DepGraphBuilder {
                 let child_idx = match self.node_indices.entry(dep.pkg.clone()) {
                     HashMapEntry::Occupied(o) => *o.get(),
                     HashMapEntry::Vacant(v) => {
-                        let idx = self.graph.add_node(Package::new(pkg, false));
+                        let idx = self.graph.add_node(Package::new(dep_pkg, false));
                         self.deps_add_queue.push_back(dep.pkg.clone());
                         v.insert(idx);
                         idx
@@ -100,8 +100,8 @@ impl DepGraphBuilder {
                 };
 
                 for info in &dep.dep_kinds {
-                    let extra = extra_dep_info.iter().find(|d| {
-                        // `dep.name` is not the source crate name but the one used for that
+                    let extra = pkg.dependencies.iter().find(|d| {
+                        // `d.name` is not the source crate name but the one used for that
                         // dependency in the parent, so if the dependency is renamed, we need to use
                         // the alternative name.
                         let name = d.rename.as_ref().unwrap_or(&d.name);
