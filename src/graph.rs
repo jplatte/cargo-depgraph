@@ -7,7 +7,11 @@ use petgraph::{
     Direction,
 };
 
-use crate::{cli::Config, dep_info::DepInfo, package::Package};
+use crate::{
+    cli::Config,
+    dep_info::{BuildFlag, DepInfo, DepKind},
+    package::Package,
+};
 
 mod builder;
 
@@ -33,11 +37,21 @@ pub fn update_dep_info(graph: &mut DepGraph) {
 }
 
 fn update_node(graph: &mut DepGraph, idx: NodeIndex<u16>) {
-    // Special case for workspace members
-    if graph[idx].dep_info.is_none() {
+    // Special case for roots
+    if graph[idx].is_root {
         let mut outgoing = graph.neighbors_directed(idx, Direction::Outgoing).detach();
         while let Some(edge_idx) = outgoing.next_edge(graph) {
             graph[edge_idx].visited = true;
+        }
+
+        // Special case for proc-macro roots
+        if graph[idx].dep_info.kind == DepKind::BUILD {
+            let mut incoming = graph.neighbors_directed(idx, Direction::Incoming).detach();
+            while let Some(edge_idx) = incoming.next_edge(graph) {
+                let kind = &mut graph[edge_idx].kind;
+                kind.host = kind.target;
+                kind.target = BuildFlag::Never;
+            }
         }
 
         return;
@@ -63,7 +77,7 @@ fn update_node(graph: &mut DepGraph, idx: NodeIndex<u16>) {
     }
 
     let node_info = node_info.expect("non-workspace members to have at least one incoming edge");
-    graph[idx].dep_info = Some(node_info);
+    graph[idx].dep_info = node_info;
 
     let mut outgoing = graph.neighbors_directed(idx, Direction::Outgoing).detach();
     while let Some(edge_idx) = outgoing.next_edge(graph) {
@@ -120,8 +134,7 @@ pub fn remove_excluded_deps(graph: &mut DepGraph, exclude: &[String]) {
         let is_excluded = exclude.contains(&pkg.name);
 
         if !is_excluded
-            && (graph.neighbors_directed(idx, Direction::Incoming).next().is_some()
-                || pkg.is_root())
+            && (graph.neighbors_directed(idx, Direction::Incoming).next().is_some() || pkg.is_root)
         {
             // If the package is not explicitly excluded and also has incoming edges or is a root
             // (currently workspace members only), don't remove it and continue with the queue.
