@@ -55,14 +55,14 @@ pub fn parse_options() -> Config {
                         .multiple(true)
                         .use_delimiter(true)
                         .help(
-                            "Package name(s) to ignore; can be given as a
+                            "Package name(s) to ignore; can be given as a \
                             comma-separated list or as multiple arguments",
                         ),
                 )
                 .arg(Arg::with_name("focus").long("focus").multiple(true).use_delimiter(true).help(
-                    "Package name(s) to focus on: only the given packages, the workspace members
-                    that depend on them and any intermediate dependencies are going to be present in
-                    the output; can be given as a comma-separated list or as multiple arguments",
+                    "Package name(s) to focus on: only the given packages, the workspace members \
+                    that depend on them and any intermediate dependencies are going to be present \
+                    in the output; can be given as a comma-separated list or as multiple arguments",
                 ))
                 // Options to pass through to `cargo metadata`
                 .arg(
