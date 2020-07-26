@@ -52,6 +52,13 @@ fn update_node(graph: &mut DepGraph, idx: NodeIndex<u16>) {
                 kind.host = kind.target;
                 kind.target = BuildFlag::Never;
             }
+
+            let mut outgoing = graph.neighbors_directed(idx, Direction::Outgoing).detach();
+            while let Some(edge_idx) = outgoing.next_edge(graph) {
+                let kind = &mut graph[edge_idx].kind;
+                kind.host = kind.target;
+                kind.target = BuildFlag::Never;
+            }
         }
 
         return;
