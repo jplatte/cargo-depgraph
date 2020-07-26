@@ -1,3 +1,10 @@
+# 1.2.1
+
+* Calculate dependency kinds correctly in all cases
+* Detect whether a crate is optional correctly in all cases
+  * Previously, a crate with a hyphen in its crates.io name would never be shown
+    as optional
+
 # 1.2.0
 
 * Rename `--exclude` to `--hide`
