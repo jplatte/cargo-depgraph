@@ -4,8 +4,7 @@ use std::{
     rc::Rc,
 };
 
-use cargo_metadata::{Package as MetaPackage, Source};
-use semver::Version;
+use cargo_metadata::{Package as MetaPackage, Source, Version};
 
 use crate::dep_info::{DepInfo, DepKind};
 
