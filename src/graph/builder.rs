@@ -74,7 +74,12 @@ impl DepGraphBuilder {
                 .context("package not found in resolve")?;
 
             for dep in &resolve_node.deps {
-                if dep.dep_kinds.iter().all(|i| skip_dep(config, i)) {
+                // Same as dep.name in most cases, but not if it got renamed in parent's Cargo.toml
+                let dep_crate_name = &get_package(&self.packages, &dep.pkg).name;
+
+                if config.exclude.contains(dep_crate_name)
+                    || dep.dep_kinds.iter().all(|i| skip_dep(config, i))
+                {
                     continue;
                 }
 

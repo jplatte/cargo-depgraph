@@ -5,6 +5,7 @@ pub struct Config {
     pub dev_deps: bool,
     pub target_deps: bool,
     pub dedup_transitive_deps: bool,
+    pub hide: Vec<String>,
     pub exclude: Vec<String>,
     pub focus: Vec<String>,
 
@@ -49,14 +50,22 @@ pub fn parse_options() -> Config {
                     "Remove direct dependency edges where there's at \
                     least one transitive dependency of the same kind.",
                 ))
+                .arg(Arg::with_name("hide").long("hide").multiple(true).use_delimiter(true).help(
+                    "Package name(s) to hide; can be given as a comma-separated list or as multiple
+                    arguments\n\n\
+                    In contrast to --exclude, hidden packages will still contribute in dependency
+                    kind resolution.",
+                ))
                 .arg(
                     Arg::with_name("exclude")
                         .long("exclude")
                         .multiple(true)
                         .use_delimiter(true)
                         .help(
-                            "Package name(s) to ignore; can be given as a \
-                            comma-separated list or as multiple arguments",
+                            "Package name(s) to ignore; can be given as a comma-separated list or
+                            as multiple arguments\n\n\
+                            In constrast to --hide, excluded packages will not contribute in
+                            dependency kind resolution",
                         ),
                 )
                 .arg(Arg::with_name("focus").long("focus").multiple(true).use_delimiter(true).help(
@@ -133,6 +142,7 @@ pub fn parse_options() -> Config {
     let dev_deps = all_deps || matches.is_present("dev_deps");
     let target_deps = all_deps || matches.is_present("target_deps");
     let dedup_transitive_deps = matches.is_present("dedup_transitive_deps");
+    let hide = matches.values_of("hide").map_or_else(Vec::new, collect_owned);
     let exclude = matches.values_of("exclude").map_or_else(Vec::new, collect_owned);
     let focus = matches.values_of("focus").map_or_else(Vec::new, collect_owned);
 
@@ -151,6 +161,7 @@ pub fn parse_options() -> Config {
         dev_deps,
         target_deps,
         dedup_transitive_deps,
+        hide,
         exclude,
         focus,
         features,

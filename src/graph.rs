@@ -121,7 +121,7 @@ pub fn remove_irrelevant_deps(graph: &mut DepGraph, focus: &[String]) {
     }
 }
 
-pub fn remove_excluded_deps(graph: &mut DepGraph, exclude: &[String]) {
+pub fn remove_deps(graph: &mut DepGraph, exclude: &[String]) {
     let mut visit_queue: VecDeque<_> = graph.node_indices().collect();
     while let Some(idx) = visit_queue.pop_front() {
         // A node can end up being in the list multiple times. If it was already removed by a
