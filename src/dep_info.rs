@@ -32,6 +32,7 @@ impl DepKind {
     pub const BUILD: Self = Self { host: BuildFlag::Always, target: BuildFlag::Never };
     pub const DEV: Self = Self { host: BuildFlag::Never, target: BuildFlag::Test };
 
+    // or dev of build
     pub const BUILD_OF_DEV: Self = Self { host: BuildFlag::Test, target: BuildFlag::Never };
     pub const NORMAL_AND_BUILD: Self = Self { host: BuildFlag::Always, target: BuildFlag::Always };
     pub const DEV_AND_BUILD: Self = Self { host: BuildFlag::Always, target: BuildFlag::Test };
@@ -40,6 +41,16 @@ impl DepKind {
     pub const DEV_AND_BUILD_OF_DEV: Self = Self { host: BuildFlag::Test, target: BuildFlag::Test };
 
     pub const UNKNOWN: Self = Self { host: BuildFlag::Never, target: BuildFlag::Never };
+
+    pub fn new(kind: MetaDepKind, proc_macro: bool) -> Self {
+        let res = Self::from(kind);
+
+        if proc_macro {
+            Self { host: res.target, target: BuildFlag::Never }
+        } else {
+            res
+        }
+    }
 
     pub fn combine_incoming(&mut self, other: Self) {
         if *self == Self::UNKNOWN || other == Self::UNKNOWN {
@@ -51,22 +62,18 @@ impl DepKind {
     }
 
     pub fn update_outgoing(&mut self, node_kind: Self) {
-        if *self == Self::UNKNOWN || node_kind == Self::UNKNOWN {
+        if node_kind == Self::UNKNOWN || *self == Self::UNKNOWN {
             // do nothing
-        } else if *self == Self::NORMAL {
-            *self = node_kind;
-        } else if *self == Self::DEV {
-            self.host &= BuildFlag::Test;
-            self.target &= BuildFlag::Test;
-        } else if *self == Self::BUILD {
-            self.target = BuildFlag::Never;
         } else {
-            eprintln!(
-                "warning: node {:?} has edge {:?}, this should never happen.",
-                node_kind, self
-            );
-            *self = Self::UNKNOWN;
+            self.host = (self.target & node_kind.host)
+                | (self.host & node_kind.target)
+                | (self.host & node_kind.host);
+            self.target &= node_kind.target;
         }
+    }
+
+    pub fn is_dev_only(&self) -> bool {
+        self.host != BuildFlag::Always && self.target != BuildFlag::Always
     }
 }
 

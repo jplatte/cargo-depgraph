@@ -7,11 +7,7 @@ use petgraph::{
     Direction,
 };
 
-use crate::{
-    cli::Config,
-    dep_info::{BuildFlag, DepInfo, DepKind},
-    package::Package,
-};
+use crate::{cli::Config, dep_info::DepInfo, package::Package};
 
 mod builder;
 
@@ -37,42 +33,19 @@ pub fn update_dep_info(graph: &mut DepGraph) {
 }
 
 fn update_node(graph: &mut DepGraph, idx: NodeIndex<u16>) {
-    // Special case for workspace members
-    if graph[idx].is_ws_member {
-        let mut outgoing = graph.neighbors_directed(idx, Direction::Outgoing).detach();
-        while let Some(edge_idx) = outgoing.next_edge(graph) {
-            graph[edge_idx].visited = true;
-        }
-
-        // Special case for proc-macro roots
-        if graph[idx].dep_info.kind == DepKind::BUILD {
-            let mut incoming = graph.neighbors_directed(idx, Direction::Incoming).detach();
-            while let Some(edge_idx) = incoming.next_edge(graph) {
-                let kind = &mut graph[edge_idx].kind;
-                kind.host = kind.target;
-                kind.target = BuildFlag::Never;
-            }
-
-            let mut outgoing = graph.neighbors_directed(idx, Direction::Outgoing).detach();
-            while let Some(edge_idx) = outgoing.next_edge(graph) {
-                let kind = &mut graph[edge_idx].kind;
-                kind.host = kind.target;
-                kind.target = BuildFlag::Never;
-            }
-        }
-
-        return;
-    }
+    let is_ws_member = graph[idx].is_ws_member;
 
     let mut incoming = graph.neighbors_directed(idx, Direction::Incoming).detach();
     let mut node_info: Option<DepInfo> = None;
     while let Some((edge_idx, node_idx)) = incoming.next(graph) {
-        if !graph[edge_idx].visited {
+        // Don't backtrack on reverse dev-dependencies of workspace members
+        let ws_reverse_dev_dep = is_ws_member && graph[edge_idx].kind.is_dev_only();
+
+        if !ws_reverse_dev_dep && !graph[edge_idx].visited {
             update_node(graph, node_idx);
         }
 
         let edge_info = graph[edge_idx];
-        assert!(edge_info.visited);
 
         if let Some(i) = &mut node_info {
             i.is_target_dep &= edge_info.is_target_dep;
@@ -83,8 +56,13 @@ fn update_node(graph: &mut DepGraph, idx: NodeIndex<u16>) {
         }
     }
 
-    let node_info = node_info.expect("non-workspace members to have at least one incoming edge");
-    graph[idx].dep_info = node_info;
+    let node_info = if is_ws_member {
+        graph[idx].dep_info
+    } else {
+        let res = node_info.expect("non-workspace members to have at least one incoming edge");
+        graph[idx].dep_info = res;
+        res
+    };
 
     let mut outgoing = graph.neighbors_directed(idx, Direction::Outgoing).detach();
     while let Some(edge_idx) = outgoing.next_edge(graph) {

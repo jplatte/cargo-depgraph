@@ -7,7 +7,11 @@ use cargo_metadata::{
 use petgraph::stable_graph::NodeIndex;
 
 use super::DepGraph;
-use crate::{cli::Config, dep_info::DepInfo, package::Package};
+use crate::{
+    cli::Config,
+    dep_info::{DepInfo, DepKind},
+    package::Package,
+};
 
 pub struct DepGraphBuilder {
     /// The dependency graph being built.
@@ -95,6 +99,8 @@ impl DepGraphBuilder {
                     }
                 };
 
+                let child_is_proc_macro = self.graph[child_idx].dep_info.kind == DepKind::BUILD;
+
                 for info in &dep.dep_kinds {
                     let extra = pkg.dependencies.iter().find(|d| {
                         // `d.name` is not the source crate name but the one used for that
@@ -118,7 +124,7 @@ impl DepGraphBuilder {
                             parent_idx,
                             child_idx,
                             DepInfo {
-                                kind: info.kind.into(),
+                                kind: DepKind::new(info.kind, child_is_proc_macro),
                                 is_target_dep: info.target.is_some(),
                                 is_optional,
                                 is_optional_direct: is_optional,
