@@ -36,10 +36,6 @@ impl Package {
             name_uses: None,
         }
     }
-
-    //pub fn dep_kind(&self) -> DepKind {
-    //    self.dep_info.map(|di| di.kind).unwrap_or(DepKind::Normal)
-    //}
 }
 
 impl Debug for Package {
