@@ -30,7 +30,7 @@ pub fn dot(graph: &DepGraph) -> Dot<'_, &DepGraph> {
         &|_, (_, pkg)| {
             let mut attrs = Vec::new();
 
-            if pkg.is_root {
+            if pkg.is_ws_member {
                 attrs.push("shape = box");
             }
 

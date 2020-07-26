@@ -15,13 +15,13 @@ pub struct Package {
     pub version: Version,
     pub source: Option<Source>,
     pub dep_info: DepInfo,
-    pub is_root: bool,
+    pub is_ws_member: bool,
 
     pub name_uses: Option<Rc<Cell<u16>>>,
 }
 
 impl Package {
-    pub fn new(pkg: &MetaPackage, is_root: bool) -> Self {
+    pub fn new(pkg: &MetaPackage, is_ws_member: bool) -> Self {
         let mut dep_info = DepInfo::default();
         if is_proc_macro(pkg) {
             dep_info.kind = DepKind::BUILD;
@@ -32,7 +32,7 @@ impl Package {
             version: pkg.version.clone(),
             source: pkg.source.clone(),
             dep_info,
-            is_root,
+            is_ws_member,
             name_uses: None,
         }
     }

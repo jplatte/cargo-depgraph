@@ -37,8 +37,8 @@ pub fn update_dep_info(graph: &mut DepGraph) {
 }
 
 fn update_node(graph: &mut DepGraph, idx: NodeIndex<u16>) {
-    // Special case for roots
-    if graph[idx].is_root {
+    // Special case for workspace members
+    if graph[idx].is_ws_member {
         let mut outgoing = graph.neighbors_directed(idx, Direction::Outgoing).detach();
         while let Some(edge_idx) = outgoing.next_edge(graph) {
             graph[edge_idx].visited = true;
@@ -141,10 +141,11 @@ pub fn remove_deps(graph: &mut DepGraph, exclude: &[String]) {
         let is_excluded = exclude.contains(&pkg.name);
 
         if !is_excluded
-            && (graph.neighbors_directed(idx, Direction::Incoming).next().is_some() || pkg.is_root)
+            && (graph.neighbors_directed(idx, Direction::Incoming).next().is_some()
+                || pkg.is_ws_member)
         {
-            // If the package is not explicitly excluded and also has incoming edges or is a root
-            // (currently workspace members only), don't remove it and continue with the queue.
+            // If the package is not explicitly excluded, and also has incoming edges or is a
+            // workspace members, don't remove it and continue with the queue.
             continue;
         }
 
