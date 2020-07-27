@@ -1,5 +1,7 @@
 # [unreleased]
 
+# 1.2.2
+
 * Fix `--exclude` not working for workspace members
 
 # 1.2.1
