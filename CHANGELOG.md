@@ -1,3 +1,7 @@
+# [unreleased]
+
+* Fix `--exclude` not working for workspace members
+
 # 1.2.1
 
 * Calculate dependency kinds correctly in all cases

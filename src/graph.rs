@@ -17,7 +17,7 @@ pub type DepGraph = StableDiGraph<Package, DepInfo, u16>;
 
 pub fn get_dep_graph(metadata: Metadata, config: &Config) -> anyhow::Result<DepGraph> {
     let mut builder = DepGraphBuilder::new(metadata)?;
-    builder.add_workspace_members()?;
+    builder.add_workspace_members(config)?;
     builder.add_dependencies(config)?;
 
     Ok(builder.graph)

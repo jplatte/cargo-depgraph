@@ -49,9 +49,13 @@ impl DepGraphBuilder {
         })
     }
 
-    pub fn add_workspace_members(&mut self) -> anyhow::Result<()> {
+    pub fn add_workspace_members(&mut self, config: &Config) -> anyhow::Result<()> {
         for pkg_id in &self.workspace_members {
             let pkg = get_package(&self.packages, pkg_id);
+            if config.exclude.contains(&pkg.name) {
+                continue;
+            }
+
             let node_idx = self.graph.add_node(Package::new(pkg, true));
             self.deps_add_queue.push_back(pkg_id.clone());
             let old_val = self.node_indices.insert(pkg_id.clone(), node_idx);
