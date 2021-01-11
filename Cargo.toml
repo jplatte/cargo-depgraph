@@ -12,7 +12,7 @@ categories = ["development-tools::cargo-plugins", "visualization"]
 exclude = [".gitignore", ".rustfmt.toml", "*.png"]
 
 [dependencies]
-anyhow = "1.0.32"
-cargo_metadata = "0.11.0"
-clap = "2.33.1"
+anyhow = "1.0.38"
+cargo_metadata = "0.12.2"
+clap = "2.33.3"
 petgraph = { version = "0.5.1", default-features = false, features = ["stable_graph"] }
