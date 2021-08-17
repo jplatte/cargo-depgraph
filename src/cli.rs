@@ -1,4 +1,4 @@
-use clap::{App, AppSettings, Arg, SubCommand};
+use clap::{App, AppSettings, Arg};
 
 pub struct Config {
     pub build_deps: bool,
@@ -25,111 +25,123 @@ pub fn parse_options() -> Config {
         .bin_name("cargo")
         .version(env!("CARGO_PKG_VERSION"))
         .subcommand(
-            SubCommand::with_name("depgraph")
-                .settings(&[AppSettings::DeriveDisplayOrder, AppSettings::UnifiedHelpMessage])
-                .arg(Arg::with_name("all_deps").long("all-deps").help(
+            App::new("depgraph")
+                .setting(AppSettings::DeriveDisplayOrder)
+                .setting(AppSettings::UnifiedHelpMessage)
+                .arg(Arg::new("all_deps").long("all-deps").about(
                     "Include all dependencies in the graph \
-                    (shorthand for --build-deps --dev-deps --target-deps)",
+                     (shorthand for --build-deps --dev-deps --target-deps)",
                 ))
                 .arg(
-                    Arg::with_name("build_deps")
+                    Arg::new("build_deps")
                         .long("build-deps")
-                        .help("Include build-dependencies in the graph"),
+                        .about("Include build-dependencies in the graph"),
                 )
                 .arg(
-                    Arg::with_name("dev_deps")
+                    Arg::new("dev_deps")
                         .long("dev-deps")
-                        .help("Include dev-dependencies in the graph"),
+                        .about("Include dev-dependencies in the graph"),
                 )
                 .arg(
-                    Arg::with_name("target_deps")
+                    Arg::new("target_deps")
                         .long("target-deps")
-                        .help("Include cfg() dependencies in the graph"),
+                        .about("Include cfg() dependencies in the graph"),
                 )
-                .arg(Arg::with_name("dedup_transitive_deps").long("dedup-transitive-deps").help(
+                .arg(Arg::new("dedup_transitive_deps").long("dedup-transitive-deps").about(
                     "Remove direct dependency edges where there's at \
-                    least one transitive dependency of the same kind.",
-                ))
-                .arg(Arg::with_name("hide").long("hide").multiple(true).use_delimiter(true).help(
-                    "Package name(s) to hide; can be given as a comma-separated list or as multiple
-                    arguments\n\n\
-                    In contrast to --exclude, hidden packages will still contribute in dependency
-                    kind resolution.",
+                     least one transitive dependency of the same kind.",
                 ))
                 .arg(
-                    Arg::with_name("exclude")
-                        .long("exclude")
-                        .multiple(true)
+                    Arg::new("hide")
+                        .long("hide")
+                        .multiple_occurrences(true)
+                        .multiple_values(true)
                         .use_delimiter(true)
-                        .help(
-                            "Package name(s) to ignore; can be given as a comma-separated list or
-                            as multiple arguments\n\n\
-                            In constrast to --hide, excluded packages will not contribute in
-                            dependency kind resolution",
+                        .about(
+                            "Package name(s) to hide; can be given as a comma-separated list or \
+                             as multiple arguments\n\n\
+                             In contrast to --exclude, hidden packages will still contribute in \
+                             dependency kind resolution.",
                         ),
                 )
-                .arg(Arg::with_name("focus").long("focus").multiple(true).use_delimiter(true).help(
-                    "Package name(s) to focus on: only the given packages, the workspace members \
-                    that depend on them and any intermediate dependencies are going to be present \
-                    in the output; can be given as a comma-separated list or as multiple arguments",
-                ))
+                .arg(
+                    Arg::new("exclude")
+                        .long("exclude")
+                        .multiple_occurrences(true)
+                        .multiple_values(true)
+                        .use_delimiter(true)
+                        .about(
+                            "Package name(s) to ignore; can be given as a comma-separated list or \
+                             as multiple arguments\n\n\
+                             In constrast to --hide, excluded packages will not contribute in \
+                             dependency kind resolution",
+                        ),
+                )
+                .arg(
+                    Arg::new("focus")
+                        .long("focus")
+                        .multiple_occurrences(true)
+                        .multiple_values(true)
+                        .use_delimiter(true)
+                        .about(
+                            "Package name(s) to focus on: only the given packages, the workspace \
+                             members that depend on them and any intermediate dependencies are \
+                             going to be present in the output; can be given as a comma-separated \
+                             list or as multiple arguments",
+                        ),
+                )
                 // Options to pass through to `cargo metadata`
                 .arg(
-                    Arg::with_name("features")
+                    Arg::new("features")
                         .long("features")
-                        .help("Space-separated list of features to activate")
-                        .multiple(true)
+                        .about("Space-separated list of features to activate")
+                        .multiple_occurrences(true)
+                        .multiple_values(true)
                         .number_of_values(1)
                         .value_name("FEATURES"),
                 )
                 .arg(
-                    Arg::with_name("all_features")
+                    Arg::new("all_features")
                         .long("all-features")
-                        .help("Activate all available features"),
+                        .about("Activate all available features"),
                 )
                 .arg(
-                    Arg::with_name("no_default_features")
+                    Arg::new("no_default_features")
                         .long("no-default-features")
-                        .help("Do not activate the `default` feature"),
+                        .about("Do not activate the `default` feature"),
                 )
                 .arg(
-                    Arg::with_name("filter_platform")
+                    Arg::new("filter_platform")
                         .long("filter-platform")
-                        .help("Only include resolve dependencies matching the given target-triple")
-                        .multiple(true)
+                        .about("Only include resolve dependencies matching the given target-triple")
+                        .multiple_occurrences(true)
+                        .multiple_values(true)
                         .number_of_values(1)
                         .value_name("TRIPLE"),
                 )
                 .arg(
-                    Arg::with_name("manifest_path")
+                    Arg::new("manifest_path")
                         .long("manifest-path")
-                        .help("Path to Cargo.toml")
+                        .about("Path to Cargo.toml")
                         .value_name("PATH"),
                 )
                 .arg(
-                    Arg::with_name("frozen")
+                    Arg::new("frozen")
                         .long("frozen")
-                        .help("Require Cargo.lock and cache are up to date"),
+                        .about("Require Cargo.lock and cache are up to date"),
                 )
+                .arg(Arg::new("locked").long("locked").about("Require Cargo.lock is up to date"))
+                .arg(Arg::new("offline").long("offline").about("Run without accessing the network"))
                 .arg(
-                    Arg::with_name("locked")
-                        .long("locked")
-                        .help("Require Cargo.lock is up to date"),
-                )
-                .arg(
-                    Arg::with_name("offline")
-                        .long("offline")
-                        .help("Run without accessing the network"),
-                )
-                .arg(
-                    Arg::with_name("unstable_flags")
-                        .short("Z")
-                        .help(
+                    Arg::new("unstable_flags")
+                        .short('Z')
+                        .about(
                             "Unstable (nightly-only) flags to Cargo, see \
                             'cargo -Z help' for details",
                         )
                         .value_name("FLAG")
-                        .multiple(true)
+                        .multiple_occurrences(true)
+                        .multiple_values(true)
                         .number_of_values(1),
                 ),
         )

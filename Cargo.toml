@@ -14,5 +14,5 @@ exclude = [".gitignore", ".rustfmt.toml", "*.png"]
 [dependencies]
 anyhow = "1.0.38"
 cargo_metadata = "0.14.0"
-clap = "2.33.3"
+clap = "3.0.0-beta.4"
 petgraph = { version = "0.6.0", default-features = false, features = ["stable_graph"] }
