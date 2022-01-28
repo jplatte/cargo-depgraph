@@ -27,27 +27,26 @@ pub fn parse_options() -> Config {
         .subcommand(
             App::new("depgraph")
                 .setting(AppSettings::DeriveDisplayOrder)
-                .setting(AppSettings::UnifiedHelpMessage)
-                .arg(Arg::new("all_deps").long("all-deps").about(
+                .arg(Arg::new("all_deps").long("all-deps").help(
                     "Include all dependencies in the graph \
                      (shorthand for --build-deps --dev-deps --target-deps)",
                 ))
                 .arg(
                     Arg::new("build_deps")
                         .long("build-deps")
-                        .about("Include build-dependencies in the graph"),
+                        .help("Include build-dependencies in the graph"),
                 )
                 .arg(
                     Arg::new("dev_deps")
                         .long("dev-deps")
-                        .about("Include dev-dependencies in the graph"),
+                        .help("Include dev-dependencies in the graph"),
                 )
                 .arg(
                     Arg::new("target_deps")
                         .long("target-deps")
-                        .about("Include cfg() dependencies in the graph"),
+                        .help("Include cfg() dependencies in the graph"),
                 )
-                .arg(Arg::new("dedup_transitive_deps").long("dedup-transitive-deps").about(
+                .arg(Arg::new("dedup_transitive_deps").long("dedup-transitive-deps").help(
                     "Remove direct dependency edges where there's at \
                      least one transitive dependency of the same kind.",
                 ))
@@ -57,7 +56,7 @@ pub fn parse_options() -> Config {
                         .multiple_occurrences(true)
                         .multiple_values(true)
                         .use_delimiter(true)
-                        .about(
+                        .help(
                             "Package name(s) to hide; can be given as a comma-separated list or \
                              as multiple arguments\n\n\
                              In contrast to --exclude, hidden packages will still contribute in \
@@ -70,7 +69,7 @@ pub fn parse_options() -> Config {
                         .multiple_occurrences(true)
                         .multiple_values(true)
                         .use_delimiter(true)
-                        .about(
+                        .help(
                             "Package name(s) to ignore; can be given as a comma-separated list or \
                              as multiple arguments\n\n\
                              In constrast to --hide, excluded packages will not contribute in \
@@ -83,7 +82,7 @@ pub fn parse_options() -> Config {
                         .multiple_occurrences(true)
                         .multiple_values(true)
                         .use_delimiter(true)
-                        .about(
+                        .help(
                             "Package name(s) to focus on: only the given packages, the workspace \
                              members that depend on them and any intermediate dependencies are \
                              going to be present in the output; can be given as a comma-separated \
@@ -94,7 +93,7 @@ pub fn parse_options() -> Config {
                 .arg(
                     Arg::new("features")
                         .long("features")
-                        .about("Space-separated list of features to activate")
+                        .help("Space-separated list of features to activate")
                         .multiple_occurrences(true)
                         .multiple_values(true)
                         .number_of_values(1)
@@ -103,17 +102,17 @@ pub fn parse_options() -> Config {
                 .arg(
                     Arg::new("all_features")
                         .long("all-features")
-                        .about("Activate all available features"),
+                        .help("Activate all available features"),
                 )
                 .arg(
                     Arg::new("no_default_features")
                         .long("no-default-features")
-                        .about("Do not activate the `default` feature"),
+                        .help("Do not activate the `default` feature"),
                 )
                 .arg(
                     Arg::new("filter_platform")
                         .long("filter-platform")
-                        .about("Only include resolve dependencies matching the given target-triple")
+                        .help("Only include resolve dependencies matching the given target-triple")
                         .multiple_occurrences(true)
                         .multiple_values(true)
                         .number_of_values(1)
@@ -122,20 +121,20 @@ pub fn parse_options() -> Config {
                 .arg(
                     Arg::new("manifest_path")
                         .long("manifest-path")
-                        .about("Path to Cargo.toml")
+                        .help("Path to Cargo.toml")
                         .value_name("PATH"),
                 )
                 .arg(
                     Arg::new("frozen")
                         .long("frozen")
-                        .about("Require Cargo.lock and cache are up to date"),
+                        .help("Require Cargo.lock and cache are up to date"),
                 )
-                .arg(Arg::new("locked").long("locked").about("Require Cargo.lock is up to date"))
-                .arg(Arg::new("offline").long("offline").about("Run without accessing the network"))
+                .arg(Arg::new("locked").long("locked").help("Require Cargo.lock is up to date"))
+                .arg(Arg::new("offline").long("offline").help("Run without accessing the network"))
                 .arg(
                     Arg::new("unstable_flags")
                         .short('Z')
-                        .about(
+                        .help(
                             "Unstable (nightly-only) flags to Cargo, see \
                             'cargo -Z help' for details",
                         )
