@@ -1,5 +1,9 @@
 # [unreleased]
 
+# 1.2.3
+
+* Upgrade dependencies
+
 # 1.2.2
 
 * Fix `--exclude` not working for workspace members
