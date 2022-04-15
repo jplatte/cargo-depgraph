@@ -1,5 +1,16 @@
 # [unreleased]
 
+# 1.2.4
+
+* Fix some invalid handling of `cargo metadata` output that lead to inaccurate
+  output and the warning
+
+  ```
+  crate from resolve not found in packages => dependencies
+  ```
+
+  on stderr
+
 # 1.2.3
 
 * Upgrade dependencies
