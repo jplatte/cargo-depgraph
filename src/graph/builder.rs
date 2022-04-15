@@ -112,7 +112,7 @@ impl DepGraphBuilder {
                         // the alternative name. We also need to canonicalize it since the names
                         // reported in resolve (crate names?) are always lowercase while in packages
                         // the names (package names?) can also contains hyphens.
-                        let name = d.rename.as_ref().unwrap_or(&d.name).replace("-", "_");
+                        let name = d.rename.as_ref().unwrap_or(&d.name).replace('-', "_");
 
                         name == dep.name
                             && d.kind == info.kind

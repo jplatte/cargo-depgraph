@@ -1,4 +1,4 @@
-use clap::{App, AppSettings, Arg};
+use clap::{AppSettings, Arg, Command};
 
 pub struct Config {
     pub build_deps: bool,
@@ -21,11 +21,11 @@ pub struct Config {
 }
 
 pub fn parse_options() -> Config {
-    let matches = App::new("cargo-depgraph")
+    let matches = Command::new("cargo-depgraph")
         .bin_name("cargo")
         .version(env!("CARGO_PKG_VERSION"))
         .subcommand(
-            App::new("depgraph")
+            Command::new("depgraph")
                 .setting(AppSettings::DeriveDisplayOrder)
                 .arg(Arg::new("all_deps").long("all-deps").help(
                     "Include all dependencies in the graph \
@@ -55,7 +55,7 @@ pub fn parse_options() -> Config {
                         .long("hide")
                         .multiple_occurrences(true)
                         .multiple_values(true)
-                        .use_delimiter(true)
+                        .use_value_delimiter(true)
                         .help(
                             "Package name(s) to hide; can be given as a comma-separated list or \
                              as multiple arguments\n\n\
@@ -68,7 +68,7 @@ pub fn parse_options() -> Config {
                         .long("exclude")
                         .multiple_occurrences(true)
                         .multiple_values(true)
-                        .use_delimiter(true)
+                        .use_value_delimiter(true)
                         .help(
                             "Package name(s) to ignore; can be given as a comma-separated list or \
                              as multiple arguments\n\n\
@@ -81,7 +81,7 @@ pub fn parse_options() -> Config {
                         .long("focus")
                         .multiple_occurrences(true)
                         .multiple_values(true)
-                        .use_delimiter(true)
+                        .use_value_delimiter(true)
                         .help(
                             "Package name(s) to focus on: only the given packages, the workspace \
                              members that depend on them and any intermediate dependencies are \
