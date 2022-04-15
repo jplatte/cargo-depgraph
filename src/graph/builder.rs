@@ -107,25 +107,22 @@ impl DepGraphBuilder {
 
                 for info in &dep.dep_kinds {
                     let extra = pkg.dependencies.iter().find(|d| {
-                        // `d.name` is not the source crate name but the one used for that
-                        // dependency in the parent, so if the dependency is renamed, we need to use
-                        // the alternative name. We also need to canonicalize it since the names
-                        // reported in resolve (crate names?) are always lowercase while in packages
-                        // the names (package names?) can also contains hyphens.
-                        let name = d.rename.as_ref().unwrap_or(&d.name).replace('-', "_");
-
-                        name == dep.name
+                        d.name == *dep_crate_name
                             && d.kind == info.kind
                             && d.target.as_ref().map(|t| t.to_string())
                                 == info.target.as_ref().map(|t| t.to_string())
                     });
-                    let is_optional = extra.map(|dep| dep.optional).unwrap_or_else(|| {
-                        eprintln!(
-                            "crate from resolve not found in packages => dependencies, this should \
-                            never happen!"
-                        );
-                        false
-                    });
+                    let is_optional = match extra {
+                        Some(dep) => dep.optional,
+                        None => {
+                            eprintln!(
+                                "dependency {} of {} not found in packages \
+                                 => dependencies, this should never happen!",
+                                dep_crate_name, pkg.name,
+                            );
+                            false
+                        }
+                    };
 
                     // We checked whether to skip this dependency fully above, but if there's
                     // multiple dependencies from A to B (e.g. normal dependency with no features,
