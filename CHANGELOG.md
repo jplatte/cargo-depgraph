@@ -1,5 +1,9 @@
 # [unreleased]
 
+# 1.2.5
+
+* Upgrade dependencies
+
 # 1.2.4
 
 * Fix some invalid handling of `cargo metadata` output that lead to inaccurate

@@ -1,6 +1,6 @@
 [package]
 name = "cargo-depgraph"
-version = "1.2.4"
+version = "1.2.5"
 authors = ["Jonas Platte <jplatte@posteo.de>"]
 license = "GPL-3.0-or-later"
 edition = "2021"
