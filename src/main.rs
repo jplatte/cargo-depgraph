@@ -20,7 +20,8 @@ mod output;
 use self::{
     cli::parse_options,
     graph::{
-        dedup_transitive_deps, get_dep_graph, remove_deps, remove_irrelevant_deps, update_dep_info,
+        dedup_transitive_deps, get_dep_graph, remove_deps, remove_irrelevant_deps,
+        remove_non_workspace_deps, update_dep_info,
     },
     output::dot,
     util::set_name_stats,
@@ -59,6 +60,9 @@ fn main() -> anyhow::Result<()> {
 
     let mut graph = get_dep_graph(metadata, &config)?;
     update_dep_info(&mut graph);
+    if config.workspace_only {
+        remove_non_workspace_deps(&mut graph);
+    }
     if !config.focus.is_empty() {
         remove_irrelevant_deps(&mut graph, &config.focus);
     }
