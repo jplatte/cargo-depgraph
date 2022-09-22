@@ -80,26 +80,6 @@ fn update_node(graph: &mut DepGraph, idx: NodeIndex<u16>) {
     }
 }
 
-pub fn remove_non_workspace_deps(graph: &mut DepGraph) {
-    let mut visit_queue: VecDeque<_> = graph.externals(Direction::Outgoing).collect();
-    while let Some(idx) = visit_queue.pop_front() {
-        // A node can end up being in the list multiple times. If it was already removed by a
-        // previous iteration of this loop, skip it.
-        if !graph.contains_node(idx) {
-            continue;
-        }
-
-        let pkg = &graph[idx];
-        if !pkg.is_ws_member {
-            // The package node at `idx` should be removed.
-            // => First add its dependencies to the visit queue
-            visit_queue.extend(graph.neighbors_directed(idx, Direction::Incoming));
-            // => Then actually remove it
-            graph.remove_node(idx);
-        }
-    }
-}
-
 pub fn remove_irrelevant_deps(graph: &mut DepGraph, focus: &[String]) {
     let mut visit_queue: VecDeque<_> = graph.externals(Direction::Outgoing).collect();
     while let Some(idx) = visit_queue.pop_front() {

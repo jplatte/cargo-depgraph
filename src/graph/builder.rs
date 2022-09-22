@@ -94,6 +94,12 @@ impl DepGraphBuilder {
                 let child_idx = match self.node_indices.entry(dep.pkg.clone()) {
                     HashMapEntry::Occupied(o) => *o.get(),
                     HashMapEntry::Vacant(v) => {
+                        if config.workspace_only {
+                            // For workspace-only mode, all the packages we care to render are
+                            // already added to node_indices by add_workspace_members.
+                            continue;
+                        }
+
                         let idx = self
                             .graph
                             .add_node(Package::new(get_package(&self.packages, &dep.pkg), false));
