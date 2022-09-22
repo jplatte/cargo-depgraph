@@ -1,5 +1,11 @@
 # [unreleased]
 
+# 1.3.0
+
+* Add the `--workspace-only` option to get a graph of just the workspace
+  packages
+* Make the `--help` output prettier by upgrading to clap version `4.0.0-rc.2`
+
 # 1.2.5
 
 * Upgrade dependencies
