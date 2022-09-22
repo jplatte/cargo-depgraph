@@ -99,7 +99,7 @@ pub fn parse_options() -> Config {
                 .arg(
                     Arg::new("features")
                         .long("features")
-                        .help("Space-separated list of features to activate")
+                        .help("List of features to activate")
                         .multiple_occurrences(true)
                         .multiple_values(true)
                         .number_of_values(1)
