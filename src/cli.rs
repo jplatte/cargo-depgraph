@@ -101,7 +101,6 @@ pub fn parse_options() -> Config {
                         .long("features")
                         .help("List of features to activate")
                         .multiple_occurrences(true)
-                        .multiple_values(true)
                         .number_of_values(1)
                         .value_name("FEATURES"),
                 )
