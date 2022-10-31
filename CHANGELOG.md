@@ -1,5 +1,9 @@
 # [unreleased]
 
+# 1.3.1
+
+* Upgrade dependencies
+
 # 1.3.0
 
 * Add the `--workspace-only` option to get a graph of just the workspace
