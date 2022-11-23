@@ -29,7 +29,12 @@ pub(crate) fn get_dep_graph(metadata: Metadata, config: &Config) -> anyhow::Resu
     // Add roots
     for pkg_id in &metadata.workspace_members {
         let pkg = get_package(&metadata.packages, pkg_id);
-        if config.exclude.contains(&pkg.name) {
+
+        // Roots are specified explicitly and don't contain this package
+        if !(config.root.is_empty() || config.root.contains(&pkg.name))
+            // Excludes are specified and include this package
+            || config.exclude.contains(&pkg.name)
+        {
             continue;
         }
 
@@ -66,14 +71,17 @@ pub(crate) fn get_dep_graph(metadata: Metadata, config: &Config) -> anyhow::Resu
             let child_idx = match node_indices.entry(dep.pkg.clone()) {
                 HashMapEntry::Occupied(o) => *o.get(),
                 HashMapEntry::Vacant(v) => {
-                    if config.workspace_only {
-                        // For workspace-only mode, all the packages we care to render are
-                        // already added to node_indices by add_workspace_members.
+                    let is_workspace_member = metadata.workspace_members.contains(&dep.pkg);
+                    if config.workspace_only && !is_workspace_member {
+                        // For workspace-only mode, don't add non-workspace
+                        // dependencies to deps_add_queue or node_indices.
                         continue;
                     }
 
-                    let idx = graph
-                        .add_node(Package::new(get_package(&metadata.packages, &dep.pkg), false));
+                    let idx = graph.add_node(Package::new(
+                        get_package(&metadata.packages, &dep.pkg),
+                        is_workspace_member,
+                    ));
                     deps_add_queue.push_back(dep.pkg.clone());
                     v.insert(idx);
                     idx

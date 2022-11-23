@@ -7,6 +7,7 @@ pub(crate) struct Config {
     pub dedup_transitive_deps: bool,
     pub hide: Vec<String>,
     pub exclude: Vec<String>,
+    pub root: Vec<String>,
     pub workspace_only: bool,
     pub focus: Vec<String>,
 
@@ -81,6 +82,13 @@ pub(crate) fn parse_options() -> Config {
                              In constrast to --hide, excluded packages will not contribute in \
                              dependency kind resolution",
                         ),
+                )
+                .arg(
+                    Arg::new("root")
+                        .long("root")
+                        .action(ArgAction::Append)
+                        .value_delimiter(',')
+                        .help("Workspace package(s) to list dependencies for. Default: all"),
                 )
                 .arg(
                     Arg::new("workspace_only")
@@ -175,6 +183,7 @@ pub(crate) fn parse_options() -> Config {
     let dedup_transitive_deps = matches.get_flag("dedup_transitive_deps");
     let hide = matches.get_many("hide").map_or_else(Vec::new, collect_owned);
     let exclude = matches.get_many("exclude").map_or_else(Vec::new, collect_owned);
+    let root = matches.get_many("root").map_or_else(Vec::new, collect_owned);
     let workspace_only = matches.get_flag("workspace_only");
     let focus = matches.get_many("focus").map_or_else(Vec::new, collect_owned);
 
@@ -195,6 +204,7 @@ pub(crate) fn parse_options() -> Config {
         dedup_transitive_deps,
         hide,
         exclude,
+        root,
         workspace_only,
         focus,
         features,
