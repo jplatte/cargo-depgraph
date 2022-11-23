@@ -8,6 +8,7 @@ use crate::{
     cli::Config,
     dep_info::{DepInfo, DepKind},
     package::Package,
+    util::is_proc_macro,
 };
 
 pub(crate) fn get_dep_graph(metadata: Metadata, config: &Config) -> anyhow::Result<DepGraph> {
@@ -34,6 +35,8 @@ pub(crate) fn get_dep_graph(metadata: Metadata, config: &Config) -> anyhow::Resu
         if !(config.root.is_empty() || config.root.contains(&pkg.name))
             // Excludes are specified and include this package
             || config.exclude.contains(&pkg.name)
+            // Build dependencies are disabled and this package is a proc-macro
+            || !config.build_deps && is_proc_macro(pkg)
         {
             continue;
         }
@@ -72,23 +75,30 @@ pub(crate) fn get_dep_graph(metadata: Metadata, config: &Config) -> anyhow::Resu
                 HashMapEntry::Occupied(o) => *o.get(),
                 HashMapEntry::Vacant(v) => {
                     let is_workspace_member = metadata.workspace_members.contains(&dep.pkg);
+
+                    // For workspace-only mode, don't add non-workspace
+                    // dependencies to deps_add_queue or node_indices.
                     if config.workspace_only && !is_workspace_member {
-                        // For workspace-only mode, don't add non-workspace
-                        // dependencies to deps_add_queue or node_indices.
                         continue;
                     }
 
-                    let idx = graph.add_node(Package::new(
-                        get_package(&metadata.packages, &dep.pkg),
-                        is_workspace_member,
-                    ));
+                    let dep_pkg = &get_package(&metadata.packages, &dep.pkg);
+                    let dep_pkg = Package::new(dep_pkg, is_workspace_member);
+
+                    // proc-macros are a bit weird because Cargo doesn't report
+                    // them as build dependencies when really they are.
+                    if !config.build_deps && dep_pkg.is_proc_macro {
+                        continue;
+                    }
+
+                    let idx = graph.add_node(dep_pkg);
                     deps_add_queue.push_back(dep.pkg.clone());
                     v.insert(idx);
                     idx
                 }
             };
 
-            let child_is_proc_macro = graph[child_idx].dep_info.kind == DepKind::BUILD;
+            let child_is_proc_macro = graph[child_idx].is_proc_macro;
 
             for info in &dep.dep_kinds {
                 let extra = pkg.dependencies.iter().find(|d| {

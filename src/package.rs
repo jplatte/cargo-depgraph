@@ -6,7 +6,10 @@ use std::{
 
 use cargo_metadata::{semver::Version, Package as MetaPackage};
 
-use crate::dep_info::{DepInfo, DepKind};
+use crate::{
+    dep_info::{DepInfo, DepKind},
+    util::is_proc_macro,
+};
 
 #[derive(Clone)]
 pub(crate) struct Package {
@@ -14,6 +17,7 @@ pub(crate) struct Package {
     pub version: Version,
     pub dep_info: DepInfo,
     pub is_ws_member: bool,
+    pub is_proc_macro: bool,
 
     pub name_uses: Option<Rc<Cell<u16>>>,
 }
@@ -21,7 +25,8 @@ pub(crate) struct Package {
 impl Package {
     pub fn new(pkg: &MetaPackage, is_ws_member: bool) -> Self {
         let mut dep_info = DepInfo::default();
-        if is_proc_macro(pkg) {
+        let is_proc_macro = is_proc_macro(pkg);
+        if is_proc_macro {
             dep_info.kind = DepKind::BUILD;
         }
 
@@ -30,6 +35,7 @@ impl Package {
             version: pkg.version.clone(),
             dep_info,
             is_ws_member,
+            is_proc_macro,
             name_uses: None,
         }
     }
@@ -44,13 +50,4 @@ impl Debug for Package {
 
         Ok(())
     }
-}
-
-fn is_proc_macro(pkg: &MetaPackage) -> bool {
-    let res = pkg.targets.iter().any(|t| t.kind.iter().any(|k| k == "proc-macro"));
-    if res && pkg.targets.iter().any(|t| t.kind.iter().any(|k| k == "lib")) {
-        eprintln!("enountered a crate that is both a regular library and a proc-macro");
-    }
-
-    res
 }
