@@ -13,7 +13,15 @@ use crate::{
     package::Package,
 };
 
-pub struct DepGraphBuilder {
+pub fn get_dep_graph(metadata: Metadata, config: &Config) -> anyhow::Result<DepGraph> {
+    let mut builder = DepGraphBuilder::new(metadata)?;
+    builder.add_workspace_members(config)?;
+    builder.add_dependencies(config)?;
+
+    Ok(builder.graph)
+}
+
+struct DepGraphBuilder {
     /// The dependency graph being built.
     pub graph: DepGraph,
     /// Map from PackageId to graph node index.

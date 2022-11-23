@@ -1,27 +1,18 @@
 use std::collections::VecDeque;
 
-use cargo_metadata::Metadata;
 use petgraph::{
     algo::all_simple_paths,
     stable_graph::{NodeIndex, StableDiGraph},
     Direction,
 };
 
-use crate::{cli::Config, dep_info::DepInfo, package::Package};
+use crate::{dep_info::DepInfo, package::Package};
 
-mod builder;
+mod build;
 
-use builder::DepGraphBuilder;
+pub use build::get_dep_graph;
 
 pub type DepGraph = StableDiGraph<Package, DepInfo, u16>;
-
-pub fn get_dep_graph(metadata: Metadata, config: &Config) -> anyhow::Result<DepGraph> {
-    let mut builder = DepGraphBuilder::new(metadata)?;
-    builder.add_workspace_members(config)?;
-    builder.add_dependencies(config)?;
-
-    Ok(builder.graph)
-}
 
 pub fn update_dep_info(graph: &mut DepGraph) {
     for idx in graph.node_indices().collect::<Vec<_>>() {
