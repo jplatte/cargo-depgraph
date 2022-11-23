@@ -9,7 +9,7 @@ use cargo_metadata::{semver::Version, Package as MetaPackage};
 use crate::dep_info::{DepInfo, DepKind};
 
 #[derive(Clone)]
-pub struct Package {
+pub(crate) struct Package {
     pub name: String,
     pub version: Version,
     pub dep_info: DepInfo,

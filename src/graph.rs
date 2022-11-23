@@ -10,11 +10,11 @@ use crate::{dep_info::DepInfo, package::Package};
 
 mod build;
 
-pub use build::get_dep_graph;
+pub(crate) use build::get_dep_graph;
 
-pub type DepGraph = StableDiGraph<Package, DepInfo, u16>;
+pub(crate) type DepGraph = StableDiGraph<Package, DepInfo, u16>;
 
-pub fn update_dep_info(graph: &mut DepGraph) {
+pub(crate) fn update_dep_info(graph: &mut DepGraph) {
     for idx in graph.node_indices().collect::<Vec<_>>() {
         // We're only mutating nodes, not adding or deleting them, so we can safely use the indices
         // that were collected at the start thoughout to visit each node once (or more than once,
@@ -71,7 +71,7 @@ fn update_node(graph: &mut DepGraph, idx: NodeIndex<u16>) {
     }
 }
 
-pub fn remove_irrelevant_deps(graph: &mut DepGraph, focus: &[String]) {
+pub(crate) fn remove_irrelevant_deps(graph: &mut DepGraph, focus: &[String]) {
     let mut visit_queue: VecDeque<_> = graph.externals(Direction::Outgoing).collect();
     while let Some(idx) = visit_queue.pop_front() {
         // A node can end up being in the list multiple times. If it was already removed by a
@@ -97,7 +97,7 @@ pub fn remove_irrelevant_deps(graph: &mut DepGraph, focus: &[String]) {
     }
 }
 
-pub fn remove_deps(graph: &mut DepGraph, exclude: &[String]) {
+pub(crate) fn remove_deps(graph: &mut DepGraph, exclude: &[String]) {
     let mut visit_queue: VecDeque<_> = graph.node_indices().collect();
     while let Some(idx) = visit_queue.pop_front() {
         // A node can end up being in the list multiple times. If it was already removed by a
@@ -126,7 +126,7 @@ pub fn remove_deps(graph: &mut DepGraph, exclude: &[String]) {
     }
 }
 
-pub fn dedup_transitive_deps(graph: &mut DepGraph) {
+pub(crate) fn dedup_transitive_deps(graph: &mut DepGraph) {
     for idx in graph.node_indices().collect::<Vec<_>>() {
         // We're only removing nodes, not adding new ones, so we can use the node indices collected
         // at the start as long as we check that they're still valid within the current graph.

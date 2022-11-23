@@ -1,6 +1,6 @@
 use clap::{Arg, ArgAction, Command};
 
-pub struct Config {
+pub(crate) struct Config {
     pub build_deps: bool,
     pub dev_deps: bool,
     pub target_deps: bool,
@@ -21,7 +21,7 @@ pub struct Config {
     pub unstable_flags: Vec<String>,
 }
 
-pub fn parse_options() -> Config {
+pub(crate) fn parse_options() -> Config {
     let matches = Command::new("cargo-depgraph")
         .bin_name("cargo")
         .version(env!("CARGO_PKG_VERSION"))

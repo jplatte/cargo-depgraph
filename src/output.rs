@@ -2,7 +2,7 @@ use petgraph::dot::{Config, Dot};
 
 use crate::{dep_info::DepKind, graph::DepGraph};
 
-pub fn dot(graph: &DepGraph) -> Dot<'_, &DepGraph> {
+pub(crate) fn dot(graph: &DepGraph) -> Dot<'_, &DepGraph> {
     Dot::with_attr_getters(
         graph,
         &[Config::EdgeNoLabel],

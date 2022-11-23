@@ -10,7 +10,7 @@ use crate::{
     package::Package,
 };
 
-pub fn get_dep_graph(metadata: Metadata, config: &Config) -> anyhow::Result<DepGraph> {
+pub(crate) fn get_dep_graph(metadata: Metadata, config: &Config) -> anyhow::Result<DepGraph> {
     let resolve = metadata
         .resolve
         .context("Couldn't obtain dependency graph. Your cargo version may be too old.")?;
@@ -129,7 +129,7 @@ fn get_package<'a>(packages: &'a [MetaPackage], pkg_id: &PackageId) -> &'a MetaP
     packages.iter().find(|pkg| pkg.id == *pkg_id).unwrap()
 }
 
-pub fn skip_dep(config: &Config, info: &cargo_metadata::DepKindInfo) -> bool {
+pub(crate) fn skip_dep(config: &Config, info: &cargo_metadata::DepKindInfo) -> bool {
     (!config.build_deps && info.kind == MetaDepKind::Build)
         || (!config.dev_deps && info.kind == MetaDepKind::Development)
         || (!config.target_deps && info.target.is_some())

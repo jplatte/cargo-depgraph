@@ -3,7 +3,7 @@ use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign};
 use cargo_metadata::DependencyKind as MetaDepKind;
 
 #[derive(Clone, Copy, Debug, Default)]
-pub struct DepInfo {
+pub(crate) struct DepInfo {
     pub kind: DepKind,
 
     // TODO: instead collect targets, once we can actually evaluate whether they apply
@@ -22,7 +22,7 @@ pub struct DepInfo {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct DepKind {
+pub(crate) struct DepKind {
     pub host: BuildFlag,
     pub target: BuildFlag,
 }
