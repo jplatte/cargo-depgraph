@@ -113,19 +113,21 @@ pub(crate) fn get_dep_graph(metadata: Metadata, config: &Config) -> anyhow::Resu
                 // multiple dependencies from A to B (e.g. normal dependency with no features,
                 // dev-dependency with some features activated), we might have to skip adding
                 // some of the edges.
-                if !skip_dep(config, info) {
-                    graph.add_edge(
-                        parent_idx,
-                        child_idx,
-                        DepInfo {
-                            kind: DepKind::new(info.kind, child_is_proc_macro),
-                            is_target_dep: info.target.is_some(),
-                            is_optional,
-                            is_optional_direct: is_optional,
-                            visited: false,
-                        },
-                    );
+                if skip_dep(config, info) {
+                    continue;
                 }
+
+                graph.add_edge(
+                    parent_idx,
+                    child_idx,
+                    DepInfo {
+                        kind: DepKind::new(info.kind, child_is_proc_macro),
+                        is_target_dep: info.target.is_some(),
+                        is_optional,
+                        is_optional_direct: is_optional,
+                        visited: false,
+                    },
+                );
             }
         }
     }
