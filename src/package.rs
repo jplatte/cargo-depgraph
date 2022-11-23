@@ -4,7 +4,7 @@ use std::{
     rc::Rc,
 };
 
-use cargo_metadata::{semver::Version, Package as MetaPackage, Source};
+use cargo_metadata::{semver::Version, Package as MetaPackage};
 
 use crate::dep_info::{DepInfo, DepKind};
 
@@ -12,7 +12,6 @@ use crate::dep_info::{DepInfo, DepKind};
 pub struct Package {
     pub name: String,
     pub version: Version,
-    pub source: Option<Source>,
     pub dep_info: DepInfo,
     pub is_ws_member: bool,
 
@@ -29,7 +28,6 @@ impl Package {
         Self {
             name: pkg.name.clone(),
             version: pkg.version.clone(),
-            source: pkg.source.clone(),
             dep_info,
             is_ws_member,
             name_uses: None,
