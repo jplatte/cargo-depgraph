@@ -1,5 +1,11 @@
 # [unreleased]
 
+# 1.4.0
+
+* Add the `--root` option to specify a subset of a workspace's crates you want
+  to get the dependency graph for
+* Only include proc-macro crates in the graph if `--build-deps` is used
+
 # 1.3.1
 
 * Upgrade dependencies
