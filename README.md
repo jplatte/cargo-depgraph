@@ -10,6 +10,10 @@ If you are using Arch Linux, you can alternatively install the AUR package `carg
 
 ## Usage
 
+*Note: This assumes you have [Graphviz](https://graphviz.org/) installed. There are also online
+tools that can generate graphics from the textual graphviz graphs `cargo depgraph` generates, if
+the command-line graphviz tools like `dot` aren't your thing.*
+
 `cargo depgraph [options] | dot -Tpng > graph.png`
 
 The full list of options can be seen by running
