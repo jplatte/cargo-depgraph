@@ -7,6 +7,7 @@ pub(crate) struct Config {
     pub dedup_transitive_deps: bool,
     pub hide: Vec<String>,
     pub exclude: Vec<String>,
+    pub include: Vec<String>,
     pub root: Vec<String>,
     pub workspace_only: bool,
     pub focus: Vec<String>,
@@ -81,6 +82,17 @@ pub(crate) fn parse_options() -> Config {
                              as multiple arguments\n\n\
                              In constrast to --hide, excluded packages will not contribute in \
                              dependency kind resolution",
+                        ),
+                )
+                .arg(
+                    Arg::new("include")
+                        .long("include")
+                        .action(ArgAction::Append)
+                        .value_delimiter(',')
+                        .help(
+                            "Package name(s) to include; can be given as a comma-separated list or \
+                             as multiple arguments\n\n\
+                             Only included packages will be shown",
                         ),
                 )
                 .arg(
@@ -183,6 +195,7 @@ pub(crate) fn parse_options() -> Config {
     let dedup_transitive_deps = matches.get_flag("dedup_transitive_deps");
     let hide = matches.get_many("hide").map_or_else(Vec::new, collect_owned);
     let exclude = matches.get_many("exclude").map_or_else(Vec::new, collect_owned);
+    let include = matches.get_many("include").map_or_else(Vec::new, collect_owned);
     let root = matches.get_many("root").map_or_else(Vec::new, collect_owned);
     let workspace_only = matches.get_flag("workspace_only");
     let focus = matches.get_many("focus").map_or_else(Vec::new, collect_owned);
@@ -204,6 +217,7 @@ pub(crate) fn parse_options() -> Config {
         dedup_transitive_deps,
         hide,
         exclude,
+        include,
         root,
         workspace_only,
         focus,
