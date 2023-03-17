@@ -69,7 +69,7 @@ pub(crate) fn parse_options() -> Config {
                             "Package name(s) to hide; can be given as a comma-separated list or \
                              as multiple arguments\n\n\
                              In contrast to --exclude, hidden packages will still contribute in \
-                             dependency kind resolution.",
+                             dependency kind resolution",
                         ),
                 )
                 .arg(
@@ -80,7 +80,7 @@ pub(crate) fn parse_options() -> Config {
                         .help(
                             "Package name(s) to ignore; can be given as a comma-separated list or \
                              as multiple arguments\n\n\
-                             In constrast to --hide, excluded packages will not contribute in \
+                             In contrast to --hide, excluded packages will not contribute in \
                              dependency kind resolution",
                         ),
                 )
