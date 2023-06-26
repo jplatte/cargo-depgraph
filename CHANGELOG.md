@@ -1,6 +1,6 @@
-# [unreleased]
+# 1.5.0
 
-- Add a new `--include` option that only shows given packages.
+- Add the `--include` option to only shows given packages
 
 # 1.4.0
 
