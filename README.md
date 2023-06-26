@@ -6,7 +6,7 @@ Creates dependency graphs for cargo projects using `cargo metadata` and graphviz
 
 `cargo install cargo-depgraph`
 
-If you are using Arch Linux, you can alternatively install the AUR package `cargo-depgraph`.
+If you are using Arch Linux, you can alternatively install via `pacman -S cargo-depgraph`.
 
 ## Usage
 
