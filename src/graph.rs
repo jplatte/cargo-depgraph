@@ -97,7 +97,7 @@ pub(crate) fn remove_irrelevant_deps(graph: &mut DepGraph, focus: &[String]) {
     }
 }
 
-pub(crate) fn remove_deps(graph: &mut DepGraph, exclude: &[String]) {
+pub(crate) fn remove_deps(graph: &mut DepGraph, hide: &[String]) {
     let mut visit_queue: VecDeque<_> = graph.node_indices().collect();
     while let Some(idx) = visit_queue.pop_front() {
         // A node can end up being in the list multiple times. If it was already removed by a
@@ -107,13 +107,14 @@ pub(crate) fn remove_deps(graph: &mut DepGraph, exclude: &[String]) {
         }
 
         let pkg = &graph[idx];
-        let is_excluded = exclude.contains(&pkg.name);
 
-        if !is_excluded
+        let is_hidden = hide.contains(&pkg.name);
+
+        if !is_hidden
             && (graph.neighbors_directed(idx, Direction::Incoming).next().is_some()
                 || pkg.is_ws_member)
         {
-            // If the package is not explicitly excluded, and also has incoming edges or is a
+            // If the package is not explicitly hidden, and also has incoming edges or is a
             // workspace members, don't remove it and continue with the queue.
             continue;
         }

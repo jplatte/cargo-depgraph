@@ -32,9 +32,11 @@ pub(crate) fn get_dep_graph(metadata: Metadata, config: &Config) -> anyhow::Resu
         let pkg = get_package(&metadata.packages, pkg_id);
 
         // Roots are specified explicitly and don't contain this package
-        if !(config.root.is_empty() || config.root.contains(&pkg.name))
+        if (!config.root.is_empty() && !config.root.contains(&pkg.name))
             // Excludes are specified and include this package
             || config.exclude.contains(&pkg.name)
+            // Includes are specified and do not include this package
+            || (!config.include.is_empty() && !config.include.contains(&pkg.name))
             // Build dependencies are disabled and this package is a proc-macro
             || !config.build_deps && is_proc_macro(pkg)
         {
@@ -65,7 +67,11 @@ pub(crate) fn get_dep_graph(metadata: Metadata, config: &Config) -> anyhow::Resu
             // Same as dep.name in most cases, but not if it got renamed in parent's Cargo.toml
             let dep_crate_name = &get_package(&metadata.packages, &dep.pkg).name;
 
+            // Excludes are specified and include this package
             if config.exclude.contains(dep_crate_name)
+                // Includes are specified and do not include this package
+                || (!config.include.is_empty() && !config.include.contains(dep_crate_name))
+                // This dependency should be skipped because of its dep_kinds
                 || dep.dep_kinds.iter().all(|i| skip_dep(config, i))
             {
                 continue;
