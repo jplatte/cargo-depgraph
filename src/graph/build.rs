@@ -67,9 +67,11 @@ pub(crate) fn get_dep_graph(metadata: Metadata, config: &Config) -> anyhow::Resu
             // Same as dep.name in most cases, but not if it got renamed in parent's Cargo.toml
             let dep_crate_name = &get_package(&metadata.packages, &dep.pkg).name;
 
+            // Excludes are specified and include this package
             if config.exclude.contains(dep_crate_name)
                 // Includes are specified and do not include this package
                 || (!config.include.is_empty() && !config.include.contains(dep_crate_name))
+                // This dependency should be skipped because of its dep_kinds
                 || dep.dep_kinds.iter().all(|i| skip_dep(config, i))
             {
                 continue;
