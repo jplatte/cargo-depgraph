@@ -98,7 +98,12 @@ pub(crate) fn get_dep_graph(metadata: Metadata, config: &Config) -> anyhow::Resu
                     }
 
                     let idx = graph.add_node(dep_pkg);
-                    deps_add_queue.push_back(dep.pkg.clone());
+
+                    // Don't add any more dependencies to the queue if we only want direct dependencies
+                    if !config.direct_dependencies_only {
+                        deps_add_queue.push_back(dep.pkg.clone());
+                    }
+
                     v.insert(idx);
                     idx
                 }
