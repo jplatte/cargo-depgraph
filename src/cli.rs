@@ -113,7 +113,7 @@ pub(crate) fn parse_options() -> Config {
                     Arg::new("direct_dependencies_only")
                         .long("direct-dependencies-only")
                         .action(ArgAction::SetTrue)
-                        .help("Only list direct workspace dependencies"),
+                        .help("Only list direct dependencies of workspace crates"),
                 )
                 .arg(
                     Arg::new("focus")
