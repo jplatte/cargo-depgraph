@@ -10,6 +10,7 @@ pub(crate) struct Config {
     pub include: Vec<String>,
     pub root: Vec<String>,
     pub workspace_only: bool,
+    pub direct_dependencies_only: bool,
     pub focus: Vec<String>,
 
     pub features: Vec<String>,
@@ -109,6 +110,12 @@ pub(crate) fn parse_options() -> Config {
                         .help("Exclude all packages outside of the workspace"),
                 )
                 .arg(
+                    Arg::new("direct_dependencies_only")
+                        .long("direct-dependencies-only")
+                        .action(ArgAction::SetTrue)
+                        .help("Only list direct dependencies of workspace crates"),
+                )
+                .arg(
                     Arg::new("focus")
                         .long("focus")
                         .action(ArgAction::Append)
@@ -198,6 +205,7 @@ pub(crate) fn parse_options() -> Config {
     let include = matches.get_many("include").map_or_else(Vec::new, collect_owned);
     let root = matches.get_many("root").map_or_else(Vec::new, collect_owned);
     let workspace_only = matches.get_flag("workspace_only");
+    let direct_dependencies_only = matches.get_flag("direct_dependencies_only");
     let focus = matches.get_many("focus").map_or_else(Vec::new, collect_owned);
 
     let features = matches.get_many("features").map_or_else(Vec::new, collect_owned);
@@ -220,6 +228,7 @@ pub(crate) fn parse_options() -> Config {
         include,
         root,
         workspace_only,
+        direct_dependencies_only,
         focus,
         features,
         all_features,
