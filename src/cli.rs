@@ -1,4 +1,4 @@
-use clap::{Arg, ArgAction, Command};
+use clap::{value_parser, Arg, ArgAction, Command};
 
 pub(crate) struct Config {
     pub build_deps: bool,
@@ -10,8 +10,8 @@ pub(crate) struct Config {
     pub include: Vec<String>,
     pub root: Vec<String>,
     pub workspace_only: bool,
-    pub direct_dependencies_only: bool,
     pub focus: Vec<String>,
+    pub depth: Option<u32>,
 
     pub features: Vec<String>,
     pub all_features: bool,
@@ -110,12 +110,6 @@ pub(crate) fn parse_options() -> Config {
                         .help("Exclude all packages outside of the workspace"),
                 )
                 .arg(
-                    Arg::new("direct_dependencies_only")
-                        .long("direct-dependencies-only")
-                        .action(ArgAction::SetTrue)
-                        .help("Only list direct dependencies of workspace crates"),
-                )
-                .arg(
                     Arg::new("focus")
                         .long("focus")
                         .action(ArgAction::Append)
@@ -126,6 +120,13 @@ pub(crate) fn parse_options() -> Config {
                              going to be present in the output; can be given as a comma-separated \
                              list or as multiple arguments",
                         ),
+                )
+                .arg(
+                    Arg::new("depth")
+                        .long("depth")
+                        .value_parser(value_parser!(u32))
+                        .action(ArgAction::Set)
+                        .help("Limit the depth of the dependency graph")
                 )
                 // Options to pass through to `cargo metadata`
                 .arg(
@@ -205,8 +206,8 @@ pub(crate) fn parse_options() -> Config {
     let include = matches.get_many("include").map_or_else(Vec::new, collect_owned);
     let root = matches.get_many("root").map_or_else(Vec::new, collect_owned);
     let workspace_only = matches.get_flag("workspace_only");
-    let direct_dependencies_only = matches.get_flag("direct_dependencies_only");
     let focus = matches.get_many("focus").map_or_else(Vec::new, collect_owned);
+    let depth = matches.get_one("depth").cloned();
 
     let features = matches.get_many("features").map_or_else(Vec::new, collect_owned);
     let all_features = matches.get_flag("all_features");
@@ -228,8 +229,8 @@ pub(crate) fn parse_options() -> Config {
         include,
         root,
         workspace_only,
-        direct_dependencies_only,
         focus,
+        depth,
         features,
         all_features,
         no_default_features,

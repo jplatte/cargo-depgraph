@@ -44,13 +44,13 @@ pub(crate) fn get_dep_graph(metadata: Metadata, config: &Config) -> anyhow::Resu
         }
 
         let node_idx = graph.add_node(Package::new(pkg, true));
-        deps_add_queue.push_back(pkg_id.clone());
+        deps_add_queue.push_back((pkg_id.clone(), 0u32));
         let old_val = node_indices.insert(pkg_id.clone(), node_idx);
         assert!(old_val.is_none());
     }
 
     // Add dependencies of the roots
-    while let Some(pkg_id) = deps_add_queue.pop_front() {
+    while let Some((pkg_id, depth)) = deps_add_queue.pop_front() {
         let pkg = get_package(&metadata.packages, &pkg_id);
 
         let parent_idx = *node_indices
@@ -99,9 +99,9 @@ pub(crate) fn get_dep_graph(metadata: Metadata, config: &Config) -> anyhow::Resu
 
                     let idx = graph.add_node(dep_pkg);
 
-                    // Don't add any more dependencies to the queue if we only want direct dependencies
-                    if !config.direct_dependencies_only {
-                        deps_add_queue.push_back(dep.pkg.clone());
+                    // Don't add dependencies of dependencies if we're at the depth limit
+                    if depth + 1 < config.depth.unwrap_or(u32::MAX) {
+                        deps_add_queue.push_back((dep.pkg.clone(), depth + 1));
                     }
 
                     v.insert(idx);
