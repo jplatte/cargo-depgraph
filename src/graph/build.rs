@@ -80,16 +80,19 @@ pub(crate) fn get_dep_graph(metadata: Metadata, config: &Config) -> anyhow::Resu
             let child_idx = match node_indices.entry(dep.pkg.clone()) {
                 HashMapEntry::Occupied(o) => *o.get(),
                 HashMapEntry::Vacant(v) => {
-                    let is_workspace_member = metadata.workspace_members.contains(&dep.pkg);
-
                     // For workspace-only mode, don't add non-workspace
                     // dependencies to deps_add_queue or node_indices.
-                    if config.workspace_only && !is_workspace_member {
+                    if config.workspace_only {
+                        continue;
+                    }
+
+                    // Don't add dependencies of dependencies if we're at the depth limit
+                    if depth + 1 > config.depth.unwrap_or(u32::MAX) {
                         continue;
                     }
 
                     let dep_pkg = &get_package(&metadata.packages, &dep.pkg);
-                    let dep_pkg = Package::new(dep_pkg, is_workspace_member);
+                    let dep_pkg = Package::new(dep_pkg, false);
 
                     // proc-macros are a bit weird because Cargo doesn't report
                     // them as build dependencies when really they are.
@@ -99,10 +102,7 @@ pub(crate) fn get_dep_graph(metadata: Metadata, config: &Config) -> anyhow::Resu
 
                     let idx = graph.add_node(dep_pkg);
 
-                    // Don't add dependencies of dependencies if we're at the depth limit
-                    if depth + 1 < config.depth.unwrap_or(u32::MAX) {
-                        deps_add_queue.push_back((dep.pkg.clone(), depth + 1));
-                    }
+                    deps_add_queue.push_back((dep.pkg.clone(), depth + 1));
 
                     v.insert(idx);
                     idx
