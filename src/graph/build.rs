@@ -80,9 +80,11 @@ pub(crate) fn get_dep_graph(metadata: Metadata, config: &Config) -> anyhow::Resu
             let child_idx = match node_indices.entry(dep.pkg.clone()) {
                 HashMapEntry::Occupied(o) => *o.get(),
                 HashMapEntry::Vacant(v) => {
+                    let is_workspace_member = metadata.workspace_members.contains(&dep.pkg);
+
                     // For workspace-only mode, don't add non-workspace
                     // dependencies to deps_add_queue or node_indices.
-                    if config.workspace_only {
+                    if config.workspace_only && !is_workspace_member {
                         continue;
                     }
 
@@ -92,7 +94,7 @@ pub(crate) fn get_dep_graph(metadata: Metadata, config: &Config) -> anyhow::Resu
                     }
 
                     let dep_pkg = &get_package(&metadata.packages, &dep.pkg);
-                    let dep_pkg = Package::new(dep_pkg, false);
+                    let dep_pkg = Package::new(dep_pkg, is_workspace_member);
 
                     // proc-macros are a bit weird because Cargo doesn't report
                     // them as build dependencies when really they are.
