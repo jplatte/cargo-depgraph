@@ -1,3 +1,9 @@
+# 1.6.0
+
+- Add the `--depth` option to limit many levels of dependencies are displayed
+  starting from the root package(s)
+- Upgrade dependencies
+
 # 1.5.0
 
 - Add the `--include` option to only shows given packages
