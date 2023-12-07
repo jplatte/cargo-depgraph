@@ -89,7 +89,7 @@ pub(crate) fn get_dep_graph(metadata: Metadata, config: &Config) -> anyhow::Resu
                     }
 
                     // Don't add dependencies of dependencies if we're at the depth limit
-                    if depth + 1 > config.depth.unwrap_or(u32::MAX) {
+                    if config.depth.is_some_and(|max_depth| depth >= max_depth) {
                         continue;
                     }
 
