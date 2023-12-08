@@ -24,7 +24,6 @@ jobs:
   formatting:
     name: Check Formatting
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
@@ -36,7 +35,6 @@ jobs:
   clippy:
     name: Run clippy (Rust nightly)
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@nightly
@@ -48,7 +46,6 @@ jobs:
   typos:
     name: Spell Check with Typos
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
       - uses: crate-ci/typos@v1.16.23
