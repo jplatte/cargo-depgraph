@@ -207,7 +207,7 @@ pub(crate) fn parse_options() -> Config {
     let root = matches.get_many("root").map_or_else(Vec::new, collect_owned);
     let workspace_only = matches.get_flag("workspace_only");
     let focus = matches.get_many("focus").map_or_else(Vec::new, collect_owned);
-    let depth = matches.get_one("depth").cloned();
+    let depth = matches.get_one("depth").copied();
 
     let features = matches.get_many("features").map_or_else(Vec::new, collect_owned);
     let all_features = matches.get_flag("all_features");

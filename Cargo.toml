@@ -15,3 +15,28 @@ anyhow = "1.0.38"
 cargo_metadata = "0.18.0"
 clap = "4.0.18"
 petgraph = { version = "0.6.0", default-features = false, features = ["stable_graph"] }
+
+[lints.rust]
+missing_debug_implementations = "warn"
+rust_2018_idioms = "warn"
+semicolon_in_expressions_from_macros = "warn"
+unused_import_braces = "warn"
+unused_qualifications = "warn"
+
+[lints.clippy]
+branches_sharing_code = "warn"
+cloned_instead_of_copied = "warn"
+dbg_macro = "warn"
+empty_line_after_outer_attr = "warn"
+inefficient_to_string = "warn"
+macro_use_imports = "warn"
+map_flatten = "warn"
+mod_module_files = "warn"
+mut_mut = "warn"
+nonstandard_macro_braces = "warn"
+semicolon_if_nothing_returned = "warn"
+str_to_string = "warn"
+todo = "warn"
+unreadable_literal = "warn"
+unseparated_literal_suffix = "warn"
+wildcard_imports = "warn"

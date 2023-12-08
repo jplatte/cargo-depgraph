@@ -44,7 +44,7 @@ pub(crate) fn get_dep_graph(metadata: Metadata, config: &Config) -> anyhow::Resu
         }
 
         let node_idx = graph.add_node(Package::new(pkg, true));
-        deps_add_queue.push_back((pkg_id.clone(), 0u32));
+        deps_add_queue.push_back((pkg_id.clone(), 0_u32));
         let old_val = node_indices.insert(pkg_id.clone(), node_idx);
         assert!(old_val.is_none());
     }
