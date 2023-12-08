@@ -17,7 +17,7 @@ pub(crate) type DepGraph = StableDiGraph<Package, DepInfo, u16>;
 pub(crate) fn update_dep_info(graph: &mut DepGraph) {
     for idx in graph.node_indices().collect::<Vec<_>>() {
         // We're only mutating nodes, not adding or deleting them, so we can safely use the indices
-        // that were collected at the start thoughout to visit each node once (or more than once,
+        // that were collected at the start throughout to visit each node once (or more than once,
         // in case we recurse inside update_node).
         update_node(graph, idx);
     }
