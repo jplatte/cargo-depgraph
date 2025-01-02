@@ -12,6 +12,7 @@ pub(crate) struct Config {
     pub workspace_only: bool,
     pub focus: Vec<String>,
     pub depth: Option<u32>,
+    pub html: bool,
 
     pub features: Vec<String>,
     pub all_features: bool,
@@ -157,6 +158,12 @@ pub(crate) fn parse_options() -> Config {
                         .value_name("TRIPLE"),
                 )
                 .arg(
+                    Arg::new("html")
+                        .long("html")
+                        .help("Generate interactive HTML output")
+                        .action(ArgAction::SetTrue)
+                )
+                .arg(
                     Arg::new("manifest_path")
                         .long("manifest-path")
                         .help("Path to Cargo.toml")
@@ -217,6 +224,7 @@ pub(crate) fn parse_options() -> Config {
     let frozen = matches.get_flag("frozen");
     let locked = matches.get_flag("locked");
     let offline = matches.get_flag("offline");
+    let html = matches.get_flag("html");
     let unstable_flags = matches.get_many("unstable_flags").map_or_else(Vec::new, collect_owned);
 
     Config {
@@ -231,6 +239,7 @@ pub(crate) fn parse_options() -> Config {
         workspace_only,
         focus,
         depth,
+        html,
         features,
         all_features,
         no_default_features,

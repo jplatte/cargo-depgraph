@@ -1,8 +1,25 @@
+use std::fmt::Display;
+
+use base64::{prelude::BASE64_STANDARD, Engine};
 use petgraph::dot::{Config, Dot};
 
 use crate::{dep_info::DepKind, graph::DepGraph};
 
-pub(crate) fn dot(graph: &DepGraph) -> Dot<'_, &DepGraph> {
+pub(crate) struct DotOutput<'a>(Dot<'a, &'a DepGraph>);
+
+impl Display for DotOutput<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.0)
+    }
+}
+
+impl<'a> From<Dot<'a, &'a DepGraph>> for DotOutput<'a> {
+    fn from(value: Dot<'a, &'a DepGraph>) -> Self {
+        Self(value)
+    }
+}
+
+pub(crate) fn dot(graph: &DepGraph) -> DotOutput<'_> {
     Dot::with_attr_getters(
         graph,
         &[Config::EdgeNoLabel],
@@ -56,6 +73,37 @@ pub(crate) fn dot(graph: &DepGraph) -> Dot<'_, &DepGraph> {
             attrs.join(", ")
         },
     )
+    .into()
+}
+
+pub(crate) fn html(graph: &DepGraph) -> String {
+    let dot_base64 = BASE64_STANDARD.encode(dot(graph).to_string());
+
+    const TEMPLATE: &str = r#"
+<html>
+<head>
+    <script type="text/javascript" src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
+
+    <style type="text/css">
+        #depgraph {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+<div id="depgraph"></div>
+
+<script type="text/javascript">
+    let container = document.getElementById('depgraph');
+    let dotGraph = atob("@BASE64_ENCODED_DOT@");
+    let { nodes, edges, options } = vis.parseDOTNetwork(dotGraph);
+    let network = new vis.Network(container, { nodes, edges }, options);
+</script>
+</body>
+</html>
+"#;
+    TEMPLATE.replace("@BASE64_ENCODED_DOT@", &dot_base64)
 }
 
 fn attr_for_dep_kind(kind: DepKind) -> Option<&'static str> {

@@ -1,6 +1,7 @@
-use std::iter;
+use std::{fmt::Display, iter};
 
 use cargo_metadata::MetadataCommand;
+use output::html;
 
 // `DepInfo` represents the data associated with dependency graph edges
 mod dep_info;
@@ -70,7 +71,8 @@ fn main() -> anyhow::Result<()> {
     }
     set_name_stats(&mut graph);
 
-    println!("{:?}", dot(&graph));
+    let output: &dyn Display = if config.html { &html(&graph) } else { &dot(&graph) };
+    println!("{output}");
 
     Ok(())
 }
