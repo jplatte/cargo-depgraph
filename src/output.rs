@@ -1,83 +1,67 @@
-use std::fmt::Display;
-
 use base64::{prelude::BASE64_STANDARD, Engine};
 use petgraph::dot::{Config, Dot};
 
 use crate::{dep_info::DepKind, graph::DepGraph};
 
-pub(crate) struct DotOutput<'a>(Dot<'a, &'a DepGraph>);
+pub(crate) fn dot(graph: &DepGraph, is_html: bool) -> String {
+    format!(
+        "{:?}",
+        Dot::with_attr_getters(
+            graph,
+            &[Config::EdgeNoLabel],
+            &|_, edge| {
+                let dep = edge.weight();
+                let mut attrs = Vec::new();
 
-impl Display for DotOutput<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self.0)
-    }
-}
+                attrs.extend_from_slice(attr_for_dep_kind(dep.kind, is_html));
 
-impl<'a> From<Dot<'a, &'a DepGraph>> for DotOutput<'a> {
-    fn from(value: Dot<'a, &'a DepGraph>) -> Self {
-        Self(value)
-    }
-}
-
-pub(crate) fn dot(graph: &DepGraph) -> DotOutput<'_> {
-    Dot::with_attr_getters(
-        graph,
-        &[Config::EdgeNoLabel],
-        &|_, edge| {
-            let dep = edge.weight();
-            let mut attrs = Vec::new();
-
-            if let Some(attr) = attr_for_dep_kind(dep.kind) {
-                attrs.push(attr);
-            }
-
-            if dep.is_target_dep {
-                attrs.push("arrowType = empty");
-                attrs.push("fillcolor = lightgrey");
-            }
-
-            if dep.is_optional_direct {
-                attrs.push("style = dotted");
-            } else if dep.is_optional {
-                attrs.push("style = dashed");
-            }
-
-            attrs.join(", ")
-        },
-        &|_, (_, pkg)| {
-            let mut attrs = Vec::new();
-
-            if pkg.is_ws_member {
-                attrs.push("shape = box");
-            }
-
-            if let Some(attr) = attr_for_dep_kind(pkg.dep_info.kind) {
-                attrs.push(attr);
-            }
-
-            match (pkg.dep_info.is_target_dep, pkg.dep_info.is_optional) {
-                (true, true) => {
-                    attrs.push("style = \"dashed,filled\"");
+                if dep.is_target_dep {
+                    attrs.push("arrowType = empty");
                     attrs.push("fillcolor = lightgrey");
                 }
-                (true, false) => {
-                    attrs.push("style = filled");
-                    attrs.push("fillcolor = lightgrey");
-                }
-                (false, true) => {
+
+                if dep.is_optional_direct {
+                    attrs.push("style = dotted");
+                } else if dep.is_optional {
                     attrs.push("style = dashed");
                 }
-                (false, false) => {}
-            }
 
-            attrs.join(", ")
-        },
+                attrs.join(", ")
+            },
+            &|_, (_, pkg)| {
+                let mut attrs = Vec::new();
+
+                if pkg.is_ws_member {
+                    attrs.push("shape = box");
+                }
+
+                attrs.extend_from_slice(attr_for_dep_kind(pkg.dep_info.kind, is_html));
+
+                match (pkg.dep_info.is_target_dep, pkg.dep_info.is_optional) {
+                    (true, true) => {
+                        attrs.push("style = \"dashed,filled\"");
+                        attrs.push("fillcolor = lightgrey");
+                        attrs.push("fontcolor = black");
+                    }
+                    (true, false) => {
+                        attrs.push("style = filled");
+                        attrs.push("fillcolor = lightgrey");
+                        attrs.push("fontcolor = black");
+                    }
+                    (false, true) => {
+                        attrs.push("style = dashed");
+                    }
+                    (false, false) => {}
+                }
+
+                attrs.join(", ")
+            },
+        )
     )
-    .into()
 }
 
 pub(crate) fn html(graph: &DepGraph) -> String {
-    let dot_base64 = BASE64_STANDARD.encode(dot(graph).to_string());
+    let dot_base64 = BASE64_STANDARD.encode(dot(graph, true));
 
     const TEMPLATE: &str = r#"
 <html>
@@ -106,16 +90,33 @@ pub(crate) fn html(graph: &DepGraph) -> String {
     TEMPLATE.replace("@BASE64_ENCODED_DOT@", &dot_base64)
 }
 
-fn attr_for_dep_kind(kind: DepKind) -> Option<&'static str> {
-    match kind {
-        DepKind::NORMAL => None,
-        DepKind::DEV => Some("color = blue"),
-        DepKind::BUILD => Some("color = green3"),
-        DepKind::BUILD_OF_DEV => Some("color = turquoise3"),
-        DepKind::NORMAL_AND_BUILD => Some("color = darkgreen"),
-        DepKind::DEV_AND_BUILD => Some("color = darkviolet"),
-        DepKind::NORMAL_AND_BUILD_OF_DEV => Some("color = turquoise4"),
-        DepKind::DEV_AND_BUILD_OF_DEV => Some("color = steelblue"),
-        DepKind::UNKNOWN => Some("color = red"),
+fn attr_for_dep_kind(kind: DepKind, is_html: bool) -> &'static [&'static str] {
+    // The Dot parser of vizjs is not fully compatible with graphviz.
+    // For example, color are applied to both background and border, some color names are not supported.
+    // So this function manually sets the style for HTML output to avoid hurting eyes.
+    if is_html {
+        match kind {
+            DepKind::NORMAL => &["color = \"#f5ecd5\""],
+            DepKind::DEV => &["color = blue", "fontcolor = white"],
+            DepKind::BUILD => &["color = \"#00cd00\"", "fontcolor = white"],
+            DepKind::BUILD_OF_DEV => &["color = \"#00c5cd\""],
+            DepKind::NORMAL_AND_BUILD => &["color = darkgreen", "fontcolor = white"],
+            DepKind::DEV_AND_BUILD => &["color = darkviolet", "fontcolor = white"],
+            DepKind::NORMAL_AND_BUILD_OF_DEV => &["color = \"#00868b\""],
+            DepKind::DEV_AND_BUILD_OF_DEV => &["color = steelblue"],
+            DepKind::UNKNOWN => &["color = red"],
+        }
+    } else {
+        match kind {
+            DepKind::NORMAL => &[],
+            DepKind::DEV => &["color = blue"],
+            DepKind::BUILD => &["color = green3"],
+            DepKind::BUILD_OF_DEV => &["color = turquoise3"],
+            DepKind::NORMAL_AND_BUILD => &["color = darkgreen"],
+            DepKind::DEV_AND_BUILD => &["color = darkviolet"],
+            DepKind::NORMAL_AND_BUILD_OF_DEV => &["color = turquoise4"],
+            DepKind::DEV_AND_BUILD_OF_DEV => &["color = steelblue"],
+            DepKind::UNKNOWN => &["color = red"],
+        }
     }
 }

@@ -1,4 +1,4 @@
-use std::{fmt::Display, iter};
+use std::iter;
 
 use cargo_metadata::MetadataCommand;
 use output::html;
@@ -71,8 +71,7 @@ fn main() -> anyhow::Result<()> {
     }
     set_name_stats(&mut graph);
 
-    let output: &dyn Display = if config.html { &html(&graph) } else { &dot(&graph) };
-    println!("{output}");
+    println!("{}", if config.html { html(&graph) } else { dot(&graph, false) });
 
     Ok(())
 }
