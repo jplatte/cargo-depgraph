@@ -245,7 +245,7 @@ pub(crate) fn parse_options() -> Config {
 
 fn collect_owned<'a, T>(iter: impl Iterator<Item = &'a T>) -> Vec<T>
 where
-    T: ?Sized + Clone + 'a,
+    T: Clone + 'a,
 {
     iter.cloned().collect()
 }
