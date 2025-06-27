@@ -45,11 +45,7 @@ impl DepKind {
     pub fn new(kind: MetaDepKind, proc_macro: bool) -> Self {
         let res = Self::from(kind);
 
-        if proc_macro {
-            Self { host: res.target, target: BuildFlag::Never }
-        } else {
-            res
-        }
+        if proc_macro { Self { host: res.target, target: BuildFlag::Never } } else { res }
     }
 
     pub fn combine_incoming(&mut self, other: Self) {

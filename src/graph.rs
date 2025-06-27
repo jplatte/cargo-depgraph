@@ -1,9 +1,9 @@
 use std::collections::VecDeque;
 
 use petgraph::{
+    Direction,
     algo::all_simple_paths,
     stable_graph::{NodeIndex, StableDiGraph},
-    Direction,
 };
 
 use crate::{dep_info::DepInfo, package::Package};

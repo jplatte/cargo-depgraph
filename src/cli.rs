@@ -1,4 +1,4 @@
-use clap::{value_parser, Arg, ArgAction, Command};
+use clap::{Arg, ArgAction, Command, value_parser};
 
 pub(crate) struct Config {
     pub build_deps: bool,
@@ -126,7 +126,7 @@ pub(crate) fn parse_options() -> Config {
                         .long("depth")
                         .value_parser(value_parser!(u32))
                         .action(ArgAction::Set)
-                        .help("Limit the depth of the dependency graph")
+                        .help("Limit the depth of the dependency graph"),
                 )
                 // Options to pass through to `cargo metadata`
                 .arg(
